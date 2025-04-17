@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  service-a:
+    build: ./services/service-a
+    ports:
+      - "5001:5000"
+
+  service-b:
+    build: ./services/service-b
+    ports:
+      - "5002:5000"
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8000"
