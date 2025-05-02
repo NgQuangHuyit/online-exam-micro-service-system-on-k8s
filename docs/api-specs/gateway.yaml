@@ -1,0 +1,30 @@
+openapi: 3.0.0
+info:
+  title: Gateway Service API
+  version: 1.0.0
+  description: API cho service cổng giao tiếp giữa frontend và các service backend.
+servers:
+  - url: http://localhost:80
+    description: Local server
+
+paths:
+  /login:
+    post:
+      summary: Xác thực sinh viên
+      description: Gửi thông tin đăng nhập đến auth-service để xác thực.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Xác thực thành công, trả về token.
+        '401':
+          description: Xác thực thất bại.
