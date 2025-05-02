@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Notification Service API
+  version: 1.0.0
+
+paths:
+  /notifications:
+    post:
+      summary: Gửi thông báo lỗi xác thực hoặc nộp trễ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                student_id:
+                  type: string
+      responses:
+        '200':
+          description: Thông báo được gửi thành công
