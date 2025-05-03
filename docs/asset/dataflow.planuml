@@ -1,0 +1,115 @@
+@startuml
+actor SV as "Sinh Viên"
+participant C as "Client (Web/Mobile App)"
+participant GW as "API Gateway"
+participant SS as "Student Service"
+participant QPS as "Quiz Participation Service:"
+participant QS as "Quiz Service"
+participant MQ as "Kafka"
+participant GS as "Score Service"
+participant RS as "Result Service"
+participant NS as "Notification Service"
+participant Cache as "Redis cache"
+database DbQPS as "ExamSession DB"
+database DbQS as "QuizDB"
+database DbSS as "StudentDB"
+database DbRS as "ResultDB"
+
+== Giai đoạn 0: Hiển thị danh sách Sinh viên ==
+C -> GW : GET /api/quizzes/{quizId}/allowed-students
+GW -> QS : GET /{quizId}/allowed-students
+QS -> DbQS : Find QuizAccess where quizId=quizId
+DbQS --> QS : List of {studentId, accessCode}
+QS --> GW : List of studentId
+GW -> C: List of studentId
+C -> SV : Hiển thị danh sách sinh viên
+
+== Giai đoạn 1: Xác thực và Bắt đầu Phiên ==
+SV -> C : Chọn studentId, accessCode
+C -> GW : POST /api/quiz-participation/start-with-code
+GW -> QPS : POST /start-with-code
+QPS -> QS : POST /{quizId}/access-validate
+QS -> DbQS : Find QuizAccess by {quizId, studentId, accessCode}
+alt Không hợp lệ
+    DbQS --> QS : Not Found / Invalid
+    QS --> QPS : Authentication Failed
+    QPS --> GW : Auth Failed
+    GW --> C : Thông báo lỗi
+    C -> SV : Hiển thị lỗi
+else Hợp lệ
+    DbQS --> QS : QuizAccess Record
+    QS -> QS : Kiểm tra accessCode, khung giờ làm bài
+    QS --> QPS : Valid OK
+    QPS -> DbQPS : Get Session Data
+    alt Đã nộp bài thành công
+       DbQPS--> QPS: SessionData (Submited)
+       QPS --> GW: ExamSession Submited
+       GW --> C: Hiện thị đã nộp bài
+       C --> SV: Hiển thị đã nộp bài
+    else Chưa Tạo phiên làm bài
+       DbQPS-->  QPS: NotFound
+       QPS -> DbQPS : Create ExamSession (STARTED)
+       DbQPS --> QPS: Created
+    else Đã tạo phiên làm bài, chưa nộp bài
+       DbQPS --> QPS: SessionData (Submited)
+    end
+
+    QPS -> Cache: Get quizId_questions
+         alt Cache hited
+             Cache --> QPS: Question list
+         else Cache missed
+             Cache --> QPS: NotFound
+             QPS -> QS : GET /{quizId}/questions
+             QS -> DbQS : Find Questions
+             DbQS --> QS : Question List
+             QS --> QPS : Question List
+         end
+
+
+    QPS --> GW : Session Data + Questions List
+    GW --> C : Hiển thị câu hỏi
+    C -> SV : Hiển thị câu hỏi
+end
+
+== Giai đoạn 2: Quá trình làm bài ==
+
+    SV -> C : Lưu trạng thái
+    C -> C : Cache to Local Storage
+
+== Giai đoạn 3: Nộp bài ==
+SV -> C : Bấm "Nộp bài"
+C -> GW : POST /api/quiz-participation/{sessionId}/submit
+GW -> QPS : POST /{sessionId}/submit
+QPS -> DbQPS : GET session:<id>
+DbQPS --> QPS : Session Data
+QPS -> QPS: Validate submission time
+
+alt Quá hạn
+    QPS --> GW : Submit quá hạn
+    GW --> C : Thông báo lỗi
+    C -> SV : Lỗi
+else Hợp lệ
+    QPS -> MQ : Publish SubmissionReceived
+    MQ --> QPS : Ack
+    QPS -> DbQPS : Update ExamSession SUBMITTED
+    DbQPS --> QPS : OK
+    QPS --> GW : Submit OK
+    GW --> C : Nộp bài thành công
+    C -> SV : Hiển thị thông báo
+end
+
+== Giai đoạn 4: Chấm điểm ==
+MQ -> RS : Consume SubmissionReceived
+RS -> QS : GET /{quizId}/answers
+QS -> DbQS : Correct Answers
+DbQS --> QS : Answer List
+QS --> RS : Answer List
+RS -> RS: Chấm điểm bài thi
+RS -> DbRS : Save Result
+DbRS --> RS : OK
+RS -> MQ: publish SubmmisionCompleted
+RS -> MQ: Ack SubmissionReceived Message
+MQ -> NS: Consume SubmmisionCompleted
+NS -> NS: Gửi thông báo kết quả
+NS -> MQ : Ack SubmmisionCompleted Message
+@enduml
