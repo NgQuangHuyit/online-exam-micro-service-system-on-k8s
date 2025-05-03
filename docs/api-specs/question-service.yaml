@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: Question Service API
+  version: 1.0.0
+
+paths:
+  /questions:
+    get:
+      summary: Lấy danh sách câu hỏi trắc nghiệm
+      parameters:
+        - in: query
+          name: quiz_id
+          required: true
+          description: Mã bài thi để lấy câu hỏi
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách câu hỏi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+        '404':
+          description: Không tìm thấy câu hỏi
+
+components:
+  schemas:
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        options:
+          type: array
+          items:
+            type: string

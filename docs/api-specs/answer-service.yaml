@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Answer Service API
+  version: 1.0.0
+
+paths:
+  /answers/grade:
+    post:
+      summary: Chấm điểm bài thi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quiz_id:
+                  type: string
+                student_id:
+                  type: string
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      question_id:
+                        type: string
+                      selected_option:
+                        type: string
+      responses:
+        '200':
+          description: Kết quả điểm thi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score:
+                    type: number
