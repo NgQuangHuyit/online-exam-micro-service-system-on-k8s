@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: Quiz Service API
+  description: API cho việc quản lý bài thi, câu hỏi và mã truy cập
+  version: 1.0.0
+
+paths:
+  /quizzes/{quizId}/allowed-students:
+    get:
+      summary: Lấy danh sách sinh viên được phép tham gia bài thi
+      description: Trả về danh sách ID sinh viên được phép tham gia bài thi dựa vào mã truy cập hợp lệ
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID của bài thi
+      responses:
+        '200':
+          description: Danh sách sinh viên được phép tham gia bài thi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                  description: ID của sinh viên
+        '404':
+          description: Không tìm thấy bài thi
+  
+  /quizzes/{quizId}/access-validate:
+    post:
+      summary: Xác thực mã truy cập
+      description: Kiểm tra tính hợp lệ của mã truy cập, sinh viên và thời gian
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID của bài thi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                  format: uuid
+                accessCode:
+                  type: string
+              required:
+                - studentId
+                - accessCode
+      responses:
+        '200':
+          description: Mã truy cập hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessValidationResponse'
+        '401':
+          description: Mã truy cập không hợp lệ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /quizzes/{quizId}/questions:
+    get:
+      summary: Lấy danh sách câu hỏi của bài thi
+      description: Trả về danh sách câu hỏi cho một bài thi cụ thể
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID của bài thi
+      responses:
+        '200':
+          description: Danh sách câu hỏi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+        '404':
+          description: Không tìm thấy bài thi
+
+  /quizzes/{quizId}/answers:
+    get:
+      summary: Lấy đáp án của bài thi
+      description: Trả về đáp án đúng cho tất cả câu hỏi trong bài thi (chỉ dành cho result-service)
+      parameters:
+        - name: quizId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID của bài thi
+      responses:
+        '200':
+          description: Danh sách đáp án
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Answer'
+        '404':
+          description: Không tìm thấy bài thi
+
+components:
+  schemas:
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: Nội dung câu hỏi
+        optionA:
+          type: string
+          description: Đáp án A
+        optionB:
+          type: string
+          description: Đáp án B
+        optionC:
+          type: string
+          description: Đáp án C
+        optionD:
+          type: string
+          description: Đáp án D
+      required:
+        - id
+        - content
+        - optionA
+        - optionB
+        - optionC
+        - optionD
+
+    Answer:
+      type: object
+      properties:
+        questionId:
+          type: string
+          format: uuid
+          description: ID của câu hỏi
+        correctOption:
+          type: string
+          enum: [A, B, C, D]
+          description: Đáp án đúng
+      required:
+        - questionId
+        - correctOption
+
+    AccessValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Trạng thái xác thực
+        accessCodeId:
+          type: string
+          format: uuid
+          description: ID của mã truy cập
+        quizId:
+          type: string
+          format: uuid
+          description: ID của bài thi
+        studentId:
+          type: string
+          format: uuid
+          description: ID của sinh viên
+      required:
+        - valid

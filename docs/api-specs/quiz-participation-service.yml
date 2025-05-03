@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  title: Quiz Participation Service API
+  description: API cho việc tham gia và nộp bài thi
+  version: 1.0.0
+
+paths:
+  /start-with-code:
+    post:
+      summary: Bắt đầu phiên thi bằng mã truy cập
+      description: Xác thực mã truy cập và tạo phiên làm bài mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quizId:
+                  type: string
+                  format: uuid
+                  description: ID của bài thi
+                studentId:
+                  type: string
+                  format: uuid
+                  description: ID của sinh viên
+                accessCode:
+                  type: string
+                  description: Mã truy cập bài thi
+              required:
+                - quizId
+                - studentId
+                - accessCode
+      responses:
+        '200':
+          description: Xác thực thành công và trả về thông tin phiên thi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSessionResponse'
+        '401':
+          description: Xác thực thất bại
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '409':
+          description: Đã nộp bài hoặc phiên thi đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSessionResponse'
+
+  /{sessionId}/submit:
+    post:
+      summary: Nộp bài thi
+      description: Gửi các câu trả lời và kết thúc phiên thi
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID của phiên thi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SubmittedAnswer'
+                  description: Danh sách câu trả lời
+              required:
+                - answers
+      responses:
+        '200':
+          description: Nộp bài thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  submittedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Lỗi khi nộp bài (ví dụ nộp quá hạn)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Không tìm thấy phiên thi
+
+components:
+  schemas:
+    ExamSessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+          description: ID phiên thi
+        quizId:
+          type: string
+          format: uuid
+          description: ID bài thi
+        studentId:
+          type: string
+          format: uuid
+          description: ID sinh viên
+        startTime:
+          type: string
+          format: date-time
+          description: Thời điểm bắt đầu
+        endTime:
+          type: string
+          format: date-time
+          description: Thời điểm kết thúc dự kiến
+        status:
+          type: string
+          enum: [STARTED, SUBMITTED, CANCELLED]
+          description: Trạng thái phiên thi
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+          description: Danh sách câu hỏi của bài thi
+      required:
+        - sessionId
+        - quizId
+        - studentId
+        - startTime
+        - endTime
+        - status
+        - questions
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: Nội dung câu hỏi
+        optionA:
+          type: string
+          description: Đáp án A
+        optionB:
+          type: string
+          description: Đáp án B
+        optionC:
+          type: string
+          description: Đáp án C
+        optionD:
+          type: string
+          description: Đáp án D
+      required:
+        - id
+        - content
+        - optionA
+        - optionB
+        - optionC
+        - optionD
+
+    SubmittedAnswer:
+      type: object
+      properties:
+        questionId:
+          type: string
+          format: uuid
+          description: ID của câu hỏi
+        selectedOption:
+          type: string
+          enum: [A, B, C, D]
+          description: Đáp án được chọn
+      required:
+        - questionId
+        - selectedOption

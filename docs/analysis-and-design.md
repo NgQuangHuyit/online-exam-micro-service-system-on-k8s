@@ -1,172 +1,286 @@
-#  Online Quiz System - Microservice Architecture (SOA-based)
+# 📊 Hệ thống Microservices - Phân tích và Thiết kế
 
-## 1.  Problem Statement
+Tài liệu này phác thảo quá trình phân tích và thiết kế cho hệ thống dựa trên microservices. Sử dụng tài liệu này để giải thích tư duy và các quyết định về kiến trúc của bạn.
 
-###  Description of the problem
-Hệ thống thi trắc nghiệm trực tuyến cho phép sinh viên làm bài thi online thông qua việc xác thực thông tin cá nhân, nhận câu hỏi, nộp bài trong thời gian giới hạn, chấm điểm và lưu kết quả.
+## 1. 🎯 Phát biểu Bài toán (Problem Statement)
 
-### Subjects of use
-- Sinh viên (Người dùng cuối)
-- Quản trị viên hệ thống (để theo dõi kết quả, không trực tiếp tương tác trong luồng chính)
+*   **Mô tả bài toán:** Hệ thống này giải quyết vấn đề tổ chức các kỳ thi trắc nghiệm trực tuyến có giới hạn thời gian cho các sinh viên cụ thể. Thay vì hệ thống đăng nhập tập trung, quyền truy cập vào mỗi bài thi được kiểm soát bằng mã xác thực (access code) duy nhất cho từng sinh viên, chỉ hợp lệ trong một khung thời gian định trước.
+*   **Người dùng:**
+    *   **Sinh viên (Chính):** Tham gia làm bài thi bằng mã xác thực được cấp.
+    *   **(Tiềm năng) Quản trị viên/Giảng viên:** Tạo bài thi, cấp quyền và mã truy cập cho sinh viên, xem kết quả (chức năng này chưa được chi tiết trong use case chính).
+*   **Mục tiêu chính:**
+    *   Cho phép các sinh viên được chỉ định tham gia bài thi cụ thể bằng mã xác thực trong khung giờ cho phép.
+    *   Cung cấp câu hỏi thi cho sinh viên.
+    *   Thu thập bộ câu trả lời cuối cùng từ sinh viên khi họ nộp bài (trạng thái câu trả lời được quản lý phía client).
+    *   Tự động chấm điểm bài làm đã nộp.
+    *   Lưu trữ kết quả thi.
+    *   (Tùy chọn) Thông báo kết quả cho sinh viên.
+*   **Loại dữ liệu xử lý:** Thông tin sinh viên (ID, tên), Nội dung bài thi (câu hỏi, lựa chọn, đáp án đúng), Thông tin truy cập bài thi (sinh viên được phép, mã xác thực, khung giờ hợp lệ, trạng thái mã), Siêu dữ liệu phiên làm bài (thời gian bắt đầu/kết thúc, trạng thái), Bộ câu trả lời do sinh viên nộp, Điểm số, Kết quả thi chi tiết, Thông báo.
 
-###  Main goal
-- Cung cấp giao diện làm bài trắc nghiệm nhanh chóng, chính xác.
-- Tự động xác thực, phân phối câu hỏi và tính điểm.
-- Ghi nhận kết quả để phục vụ thống kê, phân tích.
+## 2. 🧩 Các Microservices được Xác định
 
-### Processing data
-- Thông tin sinh viên
-- Danh sách câu hỏi, đáp án đúng
-- Câu trả lời của sinh viên
-- Thời gian làm bài
-- Kết quả và điểm số
+Danh sách các microservices trong hệ thống và trách nhiệm của chúng.
 
----
+| Tên Dịch vụ (Service Name)   | Trách nhiệm                                                                                                                      | Tech Stack         |
+|:-----------------------------|:---------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------|
+| `student-service`            | Quản lý thông tin cơ bản của sinh viên (ID, tên, số điện thoại, email).                                                          | Java Spring Boot                       |
+| `quiz-service`               | Quản lý bài thi (câu hỏi, đáp án), quản lý quyền truy cập & mã xác thực (`QuizAccess`), xác thực mã truy cập và khung thời gian. | Java Spring Boot                       |
+| `quiz-participation-service` | Xử lý quy trình tham gia thi, từ xác thực sinh viên, gửi câu hỏi, nộp bài.                                                       | Java Spring Boot                       |
+| `result-service`             | Xử lý dữ liệu nộp bài, chấm điểm và lưu trữ kết quả bài thi.                                                                    | Java Spring Boot + MongoDB             |
+| `notification-service`       | Gửi thông báo kết quả bài thi                                                                                                    | Java Spring Boot                       |
+| `api-gateway`                | Điểm vào duy nhất cho client, định tuyến request, có thể xử lý một số vấn đề chung (rate limiting, logging cơ bản).              | Spring Cloud Gateway / Nginx           |
 
-## 2.  Identified Microservices
+## 3. 🔄 Giao tiếp Dịch vụ (Service Communication)
 
-| Service Name             | Responsibility                                      | Tech Stack        |
-|--------------------------|------------------------------------------------------|-------------------|
-| `auth-service`           | Xử lý xác thực sinh viên                            | Python Flask      |
-| `question-service`       | Cung cấp danh sách câu hỏi trắc nghiệm              | Python Flask      |
-| `answer-service`         | Quản lý đáp án đúng và chấm điểm câu trả lời        | Python Flask      |
-| `score-service`          | Ghi nhận và truy xuất kết quả thi                   | Python Flask      |
-| `submission-service`     | Kiểm tra thời gian nộp bài và hợp lệ hóa bài nộp    | Python Flask      |
-| `notification-service`   | Gửi thông báo lỗi xác thực hoặc nộp trễ             | Python Flask / SMTP |
-| `quiz-participation`     | Điều phối toàn bộ luồng làm bài thi trắc nghiệm     | Python Flask      |
-| `gateway`                | Cổng giao tiếp giữa frontend và các service backend | Nginx / Flask     |
+Mô tả cách các dịch vụ tương tác:
 
----
+*   **Client ⇄ API Gateway (REST API qua HTTPS):** Client gửi các yêu cầu HTTP (bắt đầu thi, nộp bài với tất cả câu trả lời, xem kết quả,...) đến Gateway.
+*   **API Gateway ⇄ Các Microservice (REST API qua mạng nội bộ):** Gateway định tuyến các yêu cầu đến service phù hợp (SS, ESS, QS, RS,...).
+*   **Giao tiếp Đồng bộ Service-Service (REST API):**
+    *   `Quiz Participation Service` ⇄ `Quiz Service` (Để xác thực mã truy cập và lấy câu hỏi).
+    *   `Result Service` ⇄ `Quiz Service` (Để lấy đáp án đúng).
+    *   `Notification Service` ⇄ `Student Service` (Để lấy thông tin liên lạc).
+*   **Giao tiếp Bất đồng bộ Service-Service (Kafka):**
+    *   `Quiz Participation Service` → `Message Broker` (Topic: `quiz_submissions`) → `Result Service` (Để gửi bài làm đi chấm điểm, bài làm nhận trực tiếp từ client).
+    *   `Result Service` → `Message Broker` (Topic: `notifications`) → `Notification Service` (Để yêu cầu gửi thông báo kết quả).
 
-## 3.  Service Communication
+## 4. 🗂️ Thiết kế Dữ liệu (Data Design)
 
-- `Gateway` ⇄ `auth-service`: xác thực sinh viên qua REST
-- `Gateway` ⇄ `quiz-participation`: điều phối bài làm
-- `quiz-participation` ⇄ `question-service`: lấy câu hỏi
-- `quiz-participation` ⇄ `submission-service`: xác minh thời gian
-- `quiz-participation` ⇄ `answer-service`: lấy đáp án và tính điểm
-- `quiz-participation` ⇄ `score-service`: lưu kết quả
-- `quiz-participation` ⇄ `notification-service`: gửi cảnh báo lỗi
+Dưới đây là thiết kế dữ liệu chi tiết cho từng microservice:
 
-Tất cả giao tiếp thực hiện qua **REST API** với định dạng JSON.
+### `student-service`
+- **Mô hình dữ liệu:**
+  - Bảng `students`:
+    - `id` (Primary Key): UUID
+    - `name`: String
+    - `email`: String (unique)
+    - `phone_number`: String (optional)
+    - `created_at`: Timestamp
+    - `updated_at`: Timestamp
 
----
+### `quiz-service`
+- **Mô hình dữ liệu:**
+  - Bảng `quizzes`:
+    - `id` (Primary Key): UUID
+    - `title`: String
+    - `description`: Text
+    - `valid_from`: Timestamp
+    - `valid_until`: Timestamp
+    - `created_at`: Timestamp
+    - `updated_at`: Timestamp
+  - Bảng `questions`:
+    - `id` (Primary Key): UUID
+    - `quiz_id` (Foreign Key): UUID
+    - `content`: Text
+    - `option_a`: String (đáp án A)
+    - `option_b`: String (đáp án B) 
+    - `option_c`: String (đáp án C)
+    - `option_d`: String (đáp án D)
+    - `correct_option`: Enum (`A`, `B`, `C`, `D`) (đáp án đúng)
+    - `created_at`: Timestamp
+    - `updated_at`: Timestamp
+  - Bảng `quiz_access_codes`:
+    - `id` (Primary Key): UUID
+    - `quiz_id` (Foreign Key): UUID
+    - `student_id` (Foreign Key): UUID
+    - `access_code`: String (unique)
+    - `status`: Enum (`ACTIVE`, `USED`, `EXPIRED`)
+    - `valid_from`: Timestamp
+    - `valid_until`: Timestamp
+    - `created_at`: Timestamp
+    - `updated_at`: Timestamp
 
-## 4.  Data Design
+### `quiz-participation-service`
+- **Mô hình dữ liệu:**
+  - Bảng `exam_sessions`:
+    - `id` (Primary Key): UUID
+    - `student_id` (Foreign Key): UUID
+    - `quiz_id` (Foreign Key): UUID
+    - `start_time`: Timestamp
+    - `end_time`: Timestamp
+    - `status`: Enum (`STARTED`, `SUBMITTED`, `CANCELLED`)
+    - `created_at`: Timestamp
+    - `updated_at`: Timestamp
 
-#### a. `Students`
-Chứa thông tin sinh viên: mã số, tên, email,... Dùng để xác thực và lưu kết quả thi.
+### `result-service`
+- **Mô hình dữ liệu (MongoDB):**
+  - Collection `results`:
+    - `_id`: ObjectId (tự động tạo bởi MongoDB)
+    - `exam_session_id`: String (UUID của phiên thi)
+    - `student_id`: String (UUID của sinh viên)
+    - `quiz_id`: String (UUID của bài thi)
+    - `score`: Double (điểm tổng)
+    - `total_question`: Int (Số lượng câu hỏi)
+    - `scoring_details`: Array (chi tiết điểm từng câu hỏi)
+      - `question_id`: String
+      - `selected_option`: String (A, B, C, D)
+      - `correct_option`: String (A, B, C, D)
+      - `is_correct`: Boolean
+      - `score`: Double (điểm cho câu hỏi)
+    - `submission_time`: Date (thời điểm nộp bài)
+    - `status`: String (GRADED, ERROR)
+    - `metadata`: Object (dữ liệu bổ sung nếu có)
+    - `created_at`: Date
 
-#### b. `Quiz`
-Đại diện cho mỗi bài thi cụ thể, bao gồm tên, thời gian làm bài, thời điểm bắt đầu và kết thúc.
+### `kafka message payload` 
 
-#### c. `Questions`
-Chứa danh sách câu hỏi. Một câu hỏi có thể thuộc nhiều bài thi khác nhau.
+#### Topic: `quiz_submissions`
+Message này được gửi từ `quiz-participation-service` đến `result-service` khi sinh viên nộp bài thi.
 
-#### d. `QuizQuestions`
-Bảng trung gian giữa `Quiz` và `Questions`, thể hiện mối quan hệ nhiều-nhiều.
-
-#### e. `Answers`
-Chứa đáp án đúng cho từng câu hỏi. Giúp hệ thống chấm điểm tự động.
-
-#### f. `StudentAnswers`
-Lưu câu trả lời mà sinh viên đã chọn, kèm thời gian nộp và trạng thái (có đúng hay không, có trễ hạn không).
-
-#### g. `Scores`
-Lưu tổng điểm cuối cùng và thời gian hoàn thành bài của từng sinh viên.
-###  Quan hệ giữa các bảng
-- `Students` ↔ `StudentAnswers`: 1-n
-- `Questions` ↔ `Answers`: 1-1
-- `Quiz` ↔ `QuizQuestions`: 1-n
-- `QuizQuestions` ↔ `Questions`: n-1
-- `StudentAnswers` ↔ `Questions`: n-1
-- `Students` ↔ `Scores`: 1-1
-
-###  ER Diagram Suggestion
-![Entity Relationship Diagram](https://imgur.com/dxhQ7sM)
-
----
-
-## 5.  Security Considerations
-
--  Dùng **JWT (JSON Web Token)** để quản lý phiên đăng nhập.
--  Tất cả input đều được kiểm tra và sanitize ở từng service.
--  API sử dụng phân quyền dựa trên vai trò (role-based access).
-
----
-
-## 6.  Deployment Plan
-
-- Dùng **Docker Compose** để dựng môi trường local với các service độc lập.
-- Mỗi microservice có Dockerfile riêng.
-- Cấu hình biến môi trường lưu trong `.env`.
-- Giao tiếp qua bridge network nội bộ của Docker.
-
-```yaml
-version: "3.8"
-services:
-  auth-service:
-    build: ./auth
-    ports: [5001:5000]
-  question-service:
-    build: ./question
-  answer-service:
-    build: ./answer
-  score-service:
-    build: ./score
-  submission-service:
-    build: ./submission
-  quiz-participation:
-    build: ./quiz
-  notification-service:
-    build: ./notify
-  gateway:
-    build: ./gateway
-    ports: [80:80]
+```json
+{
+  "messageId": "uuid-message-123456",
+  "timestamp": "2025-05-03T10:15:30Z",
+  "eventType": "QUIZ_SUBMISSION_CREATED",
+  "payload": {
+    "examSessionId": "uuid-session-789012",
+    "studentId": "uuid-student-345678",
+    "quizId": "uuid-quiz-901234",
+    "submissionTime": "2025-05-03T10:15:25Z",
+    "answers": [
+      {
+        "questionId": "uuid-question-567890",
+        "selectedOption": "B"
+      },
+      {
+        "questionId": "uuid-question-678901",
+        "selectedOption": "A"
+      },
+      {
+        "questionId": "uuid-question-789012",
+        "selectedOption": "D"
+      }
+      // ... các câu trả lời khác
+    ],
+    "metadata": {
+      "clientIp": "192.168.1.100",
+      "userAgent": "Mozilla/5.0..."
+    }
+  }
+}
 ```
 
----
+#### Topic: `notifications`
+Message này được gửi từ `result-service` đến `notification-service` khi kết quả bài thi đã được tính toán xong.
 
-## 7.  Architecture Diagram
-![Biểu đồ UC tổng quan ](https://imgur.com/95ls8Ja)
-
-![Sequence Diagram](https://www.mermaidchart.com/raw/1ced8096-6705-4402-87aa-a7992d78e2db?theme=light&version=v0.1&format=svg)
-## 7.1  Sinh viên truy cập và xác thực
-Student → Gateway: Gửi thông tin đăng nhập (tên/mã sinh viên)
-Gateway → Auth Service: Kiểm tra xác thực
-Auth Service → Gateway: Trả kết quả xác thực (thành công/thất bại)
-
-[THẤT BẠI]
-Gateway → Notification Service: Gửi thông báo lỗi
-Notification Service → Student: Hiển thị lỗi xác thực
-
-
-
-
-## 7.2 Lấy câu hỏi và bắt đầu làm bài
-
-
-Student → Gateway: Bắt đầu làm bài
-Gateway → Quiz Participation Service: Khởi tạo bài thi
-Quiz Participation → Question Service: Lấy câu hỏi
-Question Service → Quiz Participation: Trả câu hỏi
-Quiz Participation → Gateway → Student: Hiển thị câu hỏi
+```json
+{
+  "messageId": "uuid-message-234567",
+  "timestamp": "2025-05-03T10:15:45Z",
+  "eventType": "RESULT_GRADED",
+  "payload": {
+    "examSessionId": "uuid-session-789012",
+    "studentId": "uuid-student-345678",
+    "quizId": "uuid-quiz-901234",
+    "score": 85.5,
+    "totalQuestions": 10,
+    "correctAnswers": 8,
+    "gradedAt": "2025-05-03T10:15:40Z",
+    "notificationType": "EMAIL",
+    "templateId": "quiz-result-template",
+    "priority": "NORMAL"
+  }
+}
+```
 
 
-## 7.3  Sinh viên trả lời và nộp bài
+## 5. 🔐 Cân nhắc Bảo mật (Security Considerations)
 
-Student → Gateway: Gửi câu trả lời
-Gateway → Quiz Participation: Truyền câu trả lời
-Quiz Participation → Submission Service: Kiểm tra thời gian nộp bài
+*   **Mã Truy cập (Access Code):**
+    *   Quy trình tạo và phân phối mã xác thực cho sinh viên cần đảm bảo an toàn (nằm ngoài phạm vi hệ thống này).
+    *   Mã phải đủ mạnh (dài, ngẫu nhiên) để khó đoán.
+*   **Xác thực phía Server:**
+    *   `Quiz Service` phải xác thực nghiêm ngặt sự kết hợp của `quizId`, `studentId`, `accessCode`.
+    *   Kiểm tra chặt chẽ khung thời gian (`validFrom`, `validUntil`).
+    *   Đảm bảo việc cập nhật trạng thái mã (`status` = `USED`) là **nguyên tử (atomic)** để tránh race condition (hai yêu cầu dùng cùng một mã).
+*   **Kiểm tra Thời gian Nộp bài:** `Exam Session Service` phải xác thực `submissionTime` dựa trên `deadline` của phiên.
+*   **Xác thực Đầu vào (Input Validation):** Tất cả dữ liệu nhận được từ client (qua API Gateway) và giữa các service phải được xác thực để ngăn chặn các tấn công phổ biến (injection, XSS,...).
 
-[QUÁ HẠN]
-Submission Service → Quiz Participation
-Quiz Participation → Notification Service
-Notification Service → Student
 
-[HỢP LỆ]
-Quiz Participation → Answer Service: So sánh với đáp án
-Answer Service → Quiz Participation: Trả điểm
-Quiz Participation → Score Service: Lưu kết quả
+## 6. 📦 Kế hoạch Triển khai (Deployment Plan)
 
+### 6.1 Chiến lược Containerization
+
+
+### 6.3 Cấu hình Môi trường
+
+* **Quản lý Biến Môi trường**: Sử dụng file `.env` riêng cho mỗi môi trường (dev, staging, production):
+  ```
+  # .env.example
+  # MySQL
+  MYSQL_ROOT_PASSWORD=root_password
+  MYSQL_DATABASE=quiz_db
+  MYSQL_USER=quiz_user
+  MYSQL_PASSWORD=quiz_password
+  
+  # MongoDB
+  MONGO_USERNAME=result_user
+  MONGO_PASSWORD=result_password
+  MONGO_DATABASE=result_db
+  
+  # SMTP
+  SMTP_HOST=smtp.example.com
+  SMTP_PORT=587
+  SMTP_USERNAME=notification@example.com
+  SMTP_PASSWORD=notification_password
+  ```
+
+* **Externalizing Configuration**: Sử dụng Spring Cloud Config (hoặc Kubernetes ConfigMaps/Secrets trong production) để quản lý cấu hình ứng dụng một cách tập trung.
+
+### 6.4 CI/CD Pipeline
+
+* **Continuous Integration**:
+  * Sử dụng GitHub Actions hoặc Jenkins cho việc build và test tự động.
+  * Chạy kiểm thử đơn vị (Unit Tests) và kiểm thử tích hợp (Integration Tests).
+  * Quét mã nguồn với SonarQube để đảm bảo chất lượng code.
+
+* **Continuous Deployment**:
+  * Môi trường Development: Tự động deploy khi có commit vào nhánh `develop`.
+  * Môi trường Staging: Deploy thủ công hoặc tự động khi có tag release candidate.
+  * Môi trường Production: Deploy thủ công sau khi đã kiểm thử đầy đủ ở Staging.
+
+### 6.5 Môi trường Production với Kubernetes
+
+* **Kubernetes Cluster**: Triển khai trên AWS EKS, GCP GKE hoặc Azure AKS.
+
+* **Tài nguyên Kubernetes**:
+  * Deployments: Quản lý các Pods của từng microservice.
+  * Services: Cung cấp điểm truy cập ổn định cho mỗi microservice.
+  * Ingress: Quản lý các request từ bên ngoài vào cluster.
+  * ConfigMaps/Secrets: Quản lý cấu hình và thông tin nhạy cảm.
+  * StatefulSets: Cho các dịch vụ cần lưu trạng thái (Kafka, MongoDB, MySQL).
+
+### 6.6 Monitoring, Logging và Backup
+
+* **Monitoring**: 
+  * Sử dụng Prometheus để thu thập metrics từ các service thông qua Spring Boot Actuator.
+  * Grafana để hiển thị dashboard và thiết lập cảnh báo.
+
+* **Logging**: 
+  * Centralized logging với ELK Stack (Elasticsearch, Logstash, Kibana) hoặc Graylog.
+  * Cấu hình log rotation để tối ưu dung lượng.
+
+* **Backup & Recovery**:
+  * Backup định kỳ cho MySQL và MongoDB theo lịch trình (ít nhất hàng ngày).
+  * Lưu trữ backup ở vị trí khác với production để phòng thảm họa.
+  * Thực hiện định kỳ bài tập phục hồi dữ liệu để đảm bảo tính hiệu quả của chiến lược backup.
+
+### 6.7 Quy trình Rollout & Rollback
+
+* **Blue-Green Deployment**: 
+  * Duy trì hai môi trường production song song (Blue và Green).
+  * Triển khai phiên bản mới trên môi trường không active.
+  * Chuyển đổi traffic sang môi trường mới sau khi kiểm thử.
+
+* **Canary Releases**:
+  * Triển khai phiên bản mới cho một tỷ lệ nhỏ người dùng.
+  * Mở rộng dần khi xác nhận phiên bản mới hoạt động ổn định.
+
+* **Rollback Strategy**: 
+  * Khả năng rollback nhanh chóng về phiên bản trước đó trong trường hợp phát hiện lỗi.
+  * Sử dụng Kubernetes history và version tagging để quản lý phiên bản.
+
+## 7. 🎨 Sơ đồ Kiến trúc (Architecture Diagram)
+
+*(Sơ đồ ASCII đơn giản - Nên thay thế bằng hình ảnh chi tiết hơn)*
 
