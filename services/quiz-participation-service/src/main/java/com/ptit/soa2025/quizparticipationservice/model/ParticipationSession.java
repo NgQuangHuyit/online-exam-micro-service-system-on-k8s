@@ -32,13 +32,13 @@ public class ParticipationSession {
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)")
-    private UUID id;
+    private String id;
     
     @Column(name = "student_id", nullable = false, columnDefinition = "VARCHAR(36)")
-    private UUID studentId;
+    private String studentId;
     
     @Column(name = "quiz_id", nullable = false, columnDefinition = "VARCHAR(36)")
-    private UUID quizId;
+    private String quizId;
     
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
@@ -94,7 +94,7 @@ public class ParticipationSession {
     }
     
     // Helper method to create a session with default timestamps
-    public static ParticipationSession createSession(UUID studentId, UUID quizId, LocalDateTime startTime, LocalDateTime endTime) {
+    public static ParticipationSession createSession(String studentId, String quizId, LocalDateTime startTime, LocalDateTime endTime) {
         return ParticipationSession.builder()
                 .studentId(studentId)
                 .quizId(quizId)

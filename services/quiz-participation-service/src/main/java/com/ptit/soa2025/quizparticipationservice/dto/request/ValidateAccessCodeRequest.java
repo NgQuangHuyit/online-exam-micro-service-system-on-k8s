@@ -10,6 +10,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ValidateAccessCodeRequest {
-    private UUID studentId;
+    private String studentId;
     private String accessCode;
 }

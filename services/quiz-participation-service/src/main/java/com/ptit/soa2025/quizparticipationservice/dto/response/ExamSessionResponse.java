@@ -1,5 +1,6 @@
 package com.ptit.soa2025.quizparticipationservice.dto.response;
 
+import com.ptit.soa2025.quizparticipationservice.dto.QuizInfo;
 import com.ptit.soa2025.quizparticipationservice.model.ParticipationSession.SessionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,9 +16,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExamSessionResponse {
-    private UUID sessionId;
-    private UUID quizId;
-    private UUID studentId;
+    private String sessionId;
+    private QuizInfo quizInfo;
+    private String studentId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private SessionStatus status;

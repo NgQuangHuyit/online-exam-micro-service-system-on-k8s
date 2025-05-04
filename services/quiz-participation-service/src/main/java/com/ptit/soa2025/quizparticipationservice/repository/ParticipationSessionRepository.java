@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface ParticipationSessionRepository extends JpaRepository<ParticipationSession, UUID> {
-    Optional<ParticipationSession> findByStudentIdAndQuizId(UUID studentId, UUID quizId);
+    Optional<ParticipationSession> findByStudentIdAndQuizId(String studentId, String quizId);
 }
