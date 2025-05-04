@@ -12,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionResponse {
-    private UUID id;
+    private String id;
     private String content;
     private String optionA;
     private String optionB;

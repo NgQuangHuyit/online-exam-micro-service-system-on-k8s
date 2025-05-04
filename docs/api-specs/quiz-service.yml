@@ -5,7 +5,7 @@ info:
   version: 1.0.0
 
 paths:
-  /quizzes/{quizId}/allowed-students:
+  /{quizId}/allowed-students:
     get:
       summary: Lấy danh sách sinh viên được phép tham gia bài thi
       description: Trả về danh sách ID sinh viên được phép tham gia bài thi dựa vào mã truy cập hợp lệ
@@ -26,7 +26,6 @@ paths:
                 type: array
                 items:
                   type: string
-                  format: uuid
                   description: ID của sinh viên
         '404':
           description: Không tìm thấy bài thi
@@ -52,7 +51,7 @@ paths:
               properties:
                 studentId:
                   type: string
-                  format: uuid
+                  format: string
                 accessCode:
                   type: string
               required:
@@ -75,7 +74,7 @@ paths:
                   message:
                     type: string
 
-  /quizzes/{quizId}/questions:
+  /{quizId}/questions:
     get:
       summary: Lấy danh sách câu hỏi của bài thi
       description: Trả về danh sách câu hỏi cho một bài thi cụ thể
@@ -179,13 +178,36 @@ components:
           type: string
           format: uuid
           description: ID của mã truy cập
-        quizId:
+        message:
           type: string
-          format: uuid
-          description: ID của bài thi
+          description: Thông báo kết quả xác thực
         studentId:
           type: string
-          format: uuid
           description: ID của sinh viên
+        quizInfo:
+          type: object
+          properties:
+            quizId:
+              type: string
+              format: uuid
+              description: ID của bài thi
+            title:
+              type: string
+              description: Tiêu đề bài thi
+            description:
+              type: string
+              description: Mô tả bài thi
+            duration:
+              type: integer
+              description: Thời gian làm bài (phút)
+          required:
+            - quizId
+            - title
+            - description
+            - duration
       required:
         - valid
+        - message
+        - accessCodeId
+        - studentId
+        - quizInfo

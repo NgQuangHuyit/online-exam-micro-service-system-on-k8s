@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 @FeignClient(name = "quiz-service", url = "${services.quiz-service.url}")
 public interface QuizServiceClient {
-    
+
     /**
      * Validates access code for a quiz
      * @param quizId ID of the quiz
@@ -26,14 +26,14 @@ public interface QuizServiceClient {
      * @return AccessValidationResponse containing validation result
      */
     @PostMapping("/quizzes/{quizId}/access-validate")
-    AccessValidationResponse validateAccessCode(@PathVariable("quizId") UUID quizId, 
+    AccessValidationResponse validateAccessCode(@PathVariable("quizId") String quizId,
                                                @RequestBody ValidateAccessCodeRequest request);
-    
+
     /**
      * Retrieves questions for a quiz
      * @param quizId ID of the quiz
      * @return List of questions
      */
     @GetMapping("/quizzes/{quizId}/questions")
-    List<QuestionResponse> getQuestionsForQuiz(@PathVariable("quizId") UUID quizId);
+    List<QuestionResponse> getQuestionsForQuiz(@PathVariable("quizId") String quizId);
 }

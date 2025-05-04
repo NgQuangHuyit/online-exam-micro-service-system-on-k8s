@@ -1,11 +1,14 @@
 package com.ptit.soa2025.quizparticipationservice.service;
 
 import com.ptit.soa2025.quizparticipationservice.client.QuizServiceClient;
+import com.ptit.soa2025.quizparticipationservice.constant.ErrorCode;
+import com.ptit.soa2025.quizparticipationservice.dto.QuizInfo;
 import com.ptit.soa2025.quizparticipationservice.dto.request.StartParticipationSessionRequest;
 import com.ptit.soa2025.quizparticipationservice.dto.request.ValidateAccessCodeRequest;
 import com.ptit.soa2025.quizparticipationservice.dto.response.AccessValidationResponse;
 import com.ptit.soa2025.quizparticipationservice.dto.response.ExamSessionResponse;
 import com.ptit.soa2025.quizparticipationservice.dto.response.QuestionResponse;
+import com.ptit.soa2025.quizparticipationservice.exception.QuizParticipationException;
 import com.ptit.soa2025.quizparticipationservice.exception.QuizServiceException;
 import com.ptit.soa2025.quizparticipationservice.model.ParticipationSession;
 import com.ptit.soa2025.quizparticipationservice.repository.ParticipationSessionRepository;
@@ -46,21 +49,23 @@ public class ExamParticipationService {
      * @return ExamSessionResponse with session details and questions
      */
     @Transactional
-    public ExamSessionResponse startQuizWithCode(StartParticipationSessionRequest request) {
+    public ExamSessionResponse startQuizWithCode(StartParticipationSessionRequest request)  {
         log.info("Starting quiz with code request for student: {}, quiz: {}", 
                 request.getStudentId(), request.getQuizId());
                 
         // Kiểm tra phiên làm bài đã tồn tại chưa
         Optional<ParticipationSession> existingSession = 
                 sessionRepository.findByStudentIdAndQuizId(request.getStudentId(), request.getQuizId());
-        
+
+        int a = 1;
         // Nếu đã có phiên làm bài và đã nộp, trả về thông báo
         if (existingSession.isPresent() && existingSession.get().isSubmitted()) {
             ParticipationSession session = existingSession.get();
             log.info("Student already completed this quiz. Session ID: {}", session.getId());
-            return buildExamSessionResponse(session, List.of());
+            throw  new QuizParticipationException(ErrorCode.QUIZ_PARTICIPATION_SUBMITTED);
         }
-        
+
+
         // Xác thực mã code với Quiz Service thông qua Feign Client
         AccessValidationResponse validationResponse;
         try {
@@ -93,7 +98,7 @@ public class ExamParticipationService {
         } else {
             // Tạo phiên mới
             LocalDateTime startTime = LocalDateTime.now();
-            LocalDateTime endTime = startTime.plus(DEFAULT_EXAM_DURATION);
+            LocalDateTime endTime = startTime.plus(Duration.ofMinutes(validationResponse.getQuizInfo().getDuration()));
             
             session = ParticipationSession.createSession(
                     request.getStudentId(), 
@@ -108,14 +113,14 @@ public class ExamParticipationService {
         // Lấy câu hỏi cho bài thi
         List<QuestionResponse> questions = getQuestionsForQuiz(request.getQuizId());
         
-        return buildExamSessionResponse(session, questions);
+        return buildExamSessionResponse(session, questions, validationResponse.getQuizInfo());
     }
     
     /**
      * Gets questions for a quiz, with Redis caching
      */
     @SuppressWarnings("unchecked")
-    private List<QuestionResponse> getQuestionsForQuiz(UUID quizId) {
+    private List<QuestionResponse> getQuestionsForQuiz(String quizId) {
         // Tạo cache key
         String cacheKey = "quiz_questions:" + quizId;
         
@@ -153,10 +158,10 @@ public class ExamParticipationService {
     /**
      * Builds the response DTO from a session and questions
      */
-    private ExamSessionResponse buildExamSessionResponse(ParticipationSession session, List<QuestionResponse> questions) {
+    private ExamSessionResponse buildExamSessionResponse(ParticipationSession session, List<QuestionResponse> questions, QuizInfo quizInfo) {
         return ExamSessionResponse.builder()
                 .sessionId(session.getId())
-                .quizId(session.getQuizId())
+                .quizInfo(quizInfo)
                 .studentId(session.getStudentId())
                 .startTime(session.getStartTime())
                 .endTime(session.getEndTime())

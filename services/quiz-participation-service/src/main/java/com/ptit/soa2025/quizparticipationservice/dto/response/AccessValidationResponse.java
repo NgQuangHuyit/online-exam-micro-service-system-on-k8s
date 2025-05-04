@@ -1,5 +1,6 @@
 package com.ptit.soa2025.quizparticipationservice.dto.response;
 
+import com.ptit.soa2025.quizparticipationservice.dto.QuizInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,8 +14,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AccessValidationResponse {
     private boolean valid;
-    private UUID accessCodeId;
-    private UUID quizId;
-    private UUID studentId;
+    private String accessCodeId;
+    private QuizInfo quizInfo;
+    private String studentId;
     private String message;
 }

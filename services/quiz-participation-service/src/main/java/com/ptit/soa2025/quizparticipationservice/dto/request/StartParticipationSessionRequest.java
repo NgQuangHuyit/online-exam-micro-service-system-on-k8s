@@ -12,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StartParticipationSessionRequest {
-    private UUID quizId;
-    private UUID studentId;
+    private String quizId;
+    private String studentId;
     private String accessCode;
 }
