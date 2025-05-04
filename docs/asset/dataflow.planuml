@@ -63,6 +63,7 @@ else Hợp lệ
              QS -> DbQS : Find Questions
              DbQS --> QS : Question List
              QS --> QPS : Question List
+             QPS -> Cache : Set quizid_questions
          end
 
 
@@ -100,10 +101,17 @@ end
 
 == Giai đoạn 4: Chấm điểm ==
 MQ -> RS : Consume SubmissionReceived
-RS -> QS : GET /{quizId}/answers
-QS -> DbQS : Correct Answers
-DbQS --> QS : Answer List
-QS --> RS : Answer List
+RS -> Cache : Get quizid_answers
+alt cache hited
+     Cache --> RS: value of quizid_answers
+else cache missed
+     RS -> QS : GET /{quizId}/answers
+     QS -> DbQS : Correct Answers
+     DbQS --> QS : Answer List
+     QS --> RS : Answer List
+     RS -> Cache : Set quizid_answers : answers
+end
+
 RS -> RS: Chấm điểm bài thi
 RS -> DbRS : Save Result
 DbRS --> RS : OK
