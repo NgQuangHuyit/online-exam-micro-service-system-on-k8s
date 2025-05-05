@@ -73,7 +73,6 @@ paths:
                 properties:
                   message:
                     type: string
-
   /{quizId}/questions:
     get:
       summary: Lấy danh sách câu hỏi của bài thi

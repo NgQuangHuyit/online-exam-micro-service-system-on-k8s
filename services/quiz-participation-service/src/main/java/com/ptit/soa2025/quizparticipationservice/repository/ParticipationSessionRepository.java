@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface ParticipationSessionRepository extends JpaRepository<ParticipationSession, UUID> {
     Optional<ParticipationSession> findByStudentIdAndQuizId(String studentId, String quizId);
+
+    Optional<ParticipationSession> findById(String id);
 }
