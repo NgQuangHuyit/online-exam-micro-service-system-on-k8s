@@ -30,7 +30,7 @@ paths:
         '404':
           description: Không tìm thấy bài thi
   
-  /quizzes/{quizId}/access-validate:
+  /{quizId}/access-validate:
     post:
       summary: Xác thực mã truy cập
       description: Kiểm tra tính hợp lệ của mã truy cập, sinh viên và thời gian
@@ -73,7 +73,6 @@ paths:
                 properties:
                   message:
                     type: string
-
   /{quizId}/questions:
     get:
       summary: Lấy danh sách câu hỏi của bài thi
@@ -98,7 +97,7 @@ paths:
         '404':
           description: Không tìm thấy bài thi
 
-  /quizzes/{quizId}/answers:
+  /{quizId}/answers:
     get:
       summary: Lấy đáp án của bài thi
       description: Trả về đáp án đúng cho tất cả câu hỏi trong bài thi (chỉ dành cho result-service)

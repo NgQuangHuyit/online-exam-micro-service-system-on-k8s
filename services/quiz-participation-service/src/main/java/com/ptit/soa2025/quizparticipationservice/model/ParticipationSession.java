@@ -63,9 +63,8 @@ public class ParticipationSession {
     // Method to update status to SUBMITTED and set end time
     public void markAsSubmitted() {
         this.status = SessionStatus.SUBMITTED;
-        this.endTime = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        log.info("Session {} marked as submitted at {}", id, endTime);
+        log.info("Session {} marked as submitted at {}", id, LocalDateTime.now());
     }
     
     // Method to update status to CANCELLED
@@ -76,9 +75,9 @@ public class ParticipationSession {
     }
     
     // Check if session is still valid (not expired)
-    public boolean isValid() {
+    public boolean isValid(LocalDateTime currentTime) {
         boolean valid = status == SessionStatus.STARTED && 
-               (endTime == null || LocalDateTime.now().isBefore(endTime));
+               (endTime == null || currentTime.isBefore(endTime));
         
         if (!valid) {
             log.debug("Session {} is no longer valid. Status: {}, EndTime: {}, Current time: {}", 

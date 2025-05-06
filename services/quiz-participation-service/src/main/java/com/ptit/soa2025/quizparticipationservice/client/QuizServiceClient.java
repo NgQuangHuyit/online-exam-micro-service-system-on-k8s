@@ -1,5 +1,6 @@
 package com.ptit.soa2025.quizparticipationservice.client;
 
+import com.ptit.soa2025.quizparticipationservice.config.QuizClientConfig;
 import com.ptit.soa2025.quizparticipationservice.dto.request.ValidateAccessCodeRequest;
 import com.ptit.soa2025.quizparticipationservice.dto.response.AccessValidationResponse;
 import com.ptit.soa2025.quizparticipationservice.dto.response.QuestionResponse;
@@ -16,7 +17,7 @@ import java.util.UUID;
 /**
  * Feign Client for Quiz Service
  */
-@FeignClient(name = "quiz-service", url = "${services.quiz-service.url}")
+@FeignClient(name = "quiz-service", url = "${services.quiz-service.url}", configuration = QuizClientConfig.class)
 public interface QuizServiceClient {
 
     /**
