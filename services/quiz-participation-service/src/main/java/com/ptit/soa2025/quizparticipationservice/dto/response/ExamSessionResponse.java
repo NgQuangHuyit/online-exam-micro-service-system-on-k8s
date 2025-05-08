@@ -1,6 +1,7 @@
 package com.ptit.soa2025.quizparticipationservice.dto.response;
 
 import com.ptit.soa2025.quizparticipationservice.dto.QuizInfo;
+import com.ptit.soa2025.quizparticipationservice.dto.QuizQuestion;
 import com.ptit.soa2025.quizparticipationservice.model.ParticipationSession.SessionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -22,5 +22,5 @@ public class ExamSessionResponse {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private SessionStatus status;
-    private List<QuestionResponse> questions;
+    private List<QuizQuestion> questions;
 }

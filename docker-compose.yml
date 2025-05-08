@@ -9,11 +9,13 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes --requirepass redis123
     restart: unless-stopped
-
+    networks:
+      - quiz-network
   # MySQL
   mysql:
     image: mysql:8.0
     restart: unless-stopped
+    hostname: mysql
     ports:
       - "3306:3306"
     environment:
@@ -24,6 +26,25 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - quiz-network
+
+  # MongoDB
+  mongodb:
+    image: mongo:6.0
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: resultdb
+    volumes:
+      - mongodb-data:/data/db
+#      - ./scripts/init-mongodb.js:/docker-entrypoint-initdb.d/init-mongodb.js:ro
+    command: mongod --auth
+    networks:
+      - quiz-network
 
   # Kafka and Zookeeper
   zoo1:
@@ -36,7 +57,8 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_SERVER_ID: 1
       ZOOKEEPER_SERVERS: zoo1:2888:3888
-
+    networks:
+      - quiz-network
   kafka1:
     image: confluentinc/cp-kafka:7.3.2
     hostname: kafka1
@@ -61,6 +83,8 @@ services:
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
     depends_on:
       - zoo1
+    networks:
+      - quiz-network
 
   # Kafka UI
   kafka-ui:
@@ -75,36 +99,50 @@ services:
     depends_on:
       - kafka1
       - zoo1
-  
+    networks:
+      - quiz-network
+
   quiz-service:
+    image: quiz-service:latest
     build:
       context: ./services/quiz-service
       dockerfile: Dockerfile
+    hostname: quiz-service
     ports:
       - "8082:8081"
+    networks:
+      - quiz-network
   
   quiz-participation-service:
+    image: quiz-participation-service:latest
     build:
       context: ./services/quiz-participation-service
       dockerfile: Dockerfile
+    container_name: quiz-participation-service
     ports:
       - "8083:8083"
     depends_on:
       - mysql
       - redis
       - kafka1
-      - kafka-ui
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka1:19092
       KAFKA_GROUP_ID: quiz-participation-service
       KAFKA_SUBMISSION_TOPIC: quiz-submissions
-      QUIZ_SERVICE_URL: quiz-service:8082
+      QUIZ_SERVICE_URL: quiz-service:8081
       DB_PASSWORD: password
       DB_USERNAME: root
-      DB_URL: jdbc:mysql://localhost:3306/quiz_participation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_URL: jdbc:mysql://mysql:3306/quiz_participation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: redis123
+    networks:
+      - quiz-network
 volumes:
   redis-data:
   mysql-data:
+  mongodb-data:
+networks:
+  quiz-network:
+    driver: bridge
+

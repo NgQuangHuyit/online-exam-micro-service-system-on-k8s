@@ -1,5 +1,7 @@
 package com.ptit.soa2025.quizparticipationservice.dto.request;
 
+
+import com.ptit.soa2025.quizparticipationservice.dto.StudentAnswer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,16 +18,5 @@ import java.util.List;
 @AllArgsConstructor
 public class SubmitQuizRequest {
     @NotEmpty(message = "Danh sách câu trả lời không được rỗng")
-    private List<@Valid SubmittedAnswer> answers;
-    
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class SubmittedAnswer {
-        @NotNull(message = "ID câu hỏi không được để trống")
-        private String questionId;
-        
-        @NotNull(message = "Đáp án được chọn không được để trống")
-        private String selectedOption;
-    }
+    private List<@Valid StudentAnswer> answers;
 }
