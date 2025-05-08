@@ -9,17 +9,17 @@ import com.ptit.soa2025.quizparticipationservice.dto.request.SubmitQuizRequest;
 import com.ptit.soa2025.quizparticipationservice.dto.request.ValidateAccessCodeRequest;
 import com.ptit.soa2025.quizparticipationservice.dto.response.AccessValidationResponse;
 import com.ptit.soa2025.quizparticipationservice.dto.response.ExamSessionResponse;
-import com.ptit.soa2025.quizparticipationservice.dto.response.QuestionResponse;
+import com.ptit.soa2025.quizparticipationservice.dto.QuizQuestion;
 import com.ptit.soa2025.quizparticipationservice.dto.response.SubmitQuizResponse;
 import com.ptit.soa2025.quizparticipationservice.exception.QuizParticipationException;
 import com.ptit.soa2025.quizparticipationservice.exception.QuizServiceException;
+import com.ptit.soa2025.quizparticipationservice.model.OutboxEvent;
 import com.ptit.soa2025.quizparticipationservice.model.ParticipationSession;
 import com.ptit.soa2025.quizparticipationservice.repository.ParticipationSessionRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,7 @@ public class ExamParticipationService {
     private final QuizServiceClient quizServiceClient;
     private final ParticipationSessionRepository sessionRepository;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final KafkaProducerService kafkaProducerService;
+    private final OutboxService outboxService;
     
     // Thời gian làm bài (60 phút)
     private static final Duration DEFAULT_EXAM_DURATION = Duration.ofMinutes(60);
@@ -111,13 +111,14 @@ public class ExamParticipationService {
         }
         
         // Lấy câu hỏi cho bài thi
-        List<QuestionResponse> questions = getQuestionsForQuiz(request.getQuizId());
+        List<QuizQuestion> questions = getQuestionsForQuiz(request.getQuizId());
         
         return buildExamSessionResponse(session, questions, validationResponse.getQuizInfo());
     }
     
     /**
-     * Submits a quiz and sends an event to Kafka for grading
+     * Submits a quiz and sends an event to Kafka for grading using the Outbox Pattern
+     * to ensure transactional consistency between database update and message sending
      * 
      * @param sessionId ID of the session
      * @param request The submission containing answers
@@ -127,63 +128,45 @@ public class ExamParticipationService {
     @Transactional
     public SubmitQuizResponse submitQuiz(String sessionId, SubmitQuizRequest request) {
         log.info("Processing quiz submission for session: {}", sessionId);
-
+        
         LocalDateTime submissionTime = LocalDateTime.now();
+        
         // 1. Find and validate session
         ParticipationSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new QuizParticipationException(ErrorCode.QUIZ_NOT_FOUND, 
                         "Không tìm thấy phiên làm bài với ID: " + sessionId));
         
-//        // 2. Check if already submitted
-//        if (session.isSubmitted()) {
-//            throw new QuizParticipationException(ErrorCode.QUIZ_PARTICIPATION_SUBMITTED);
-//        }
-//
-//        // 3. Check if session is still valid (not expired)
-//        if (!session.isValid(submissionTime)) {
-//            throw new QuizParticipationException(ErrorCode.QUIZ_PARTICIPATION_TIME_OVER);
-//        }
-
-        // 4. Create and send Kafka event
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("clientIp", "127.0.0.1");
-        metadata.put("userAgent", "ExamClient/1.0");
-        
-        QuizSubmissionEvent event = QuizSubmissionEvent.builder()
-                .messageId(UUID.randomUUID().toString())
-                .timestamp(LocalDateTime.now())
-                .eventType("QUIZ_SUBMISSION_CREATED")
-                .payload(QuizSubmissionEvent.PayloadData.builder()
-                        .examSessionId(sessionId)
-                        .startTime(session.getStartTime())
-                        .submissionTime(session.getEndTime())
-                        .endTime(session.getEndTime())
-                        .studentId(session.getStudentId())
-                        .quizId(session.getQuizId())
-                        .submissionTime(submissionTime)
-                        .answers(request.getAnswers())
-                        .metadata(metadata)
-                        .build())
-                .build();
-        
-        try {
-            SendResult<String, String> result = kafkaProducerService.sendQuizSubmissionEvent(event)
-                    .get(); // Block until sent
-
-            log.info("Successfully sent Kafka message: topic={}, partition={}, offset={}",
-                    result.getRecordMetadata().topic(),
-                    result.getRecordMetadata().partition(),
-                    result.getRecordMetadata().offset());
-
-            session.markAsSubmitted();
-            sessionRepository.save(session);
-        } catch (Exception e) {
-            log.error("Failed to send quiz submission to Kafka: {}", e.getMessage(), e);
-            // We don't throw exception here as we want submission to succeed even if Kafka is down
-            // In a production app, consider implementing retry mechanism or store events in a local queue
+        // 2. Check if already submitted
+        if (session.isSubmitted()) {
+            throw new QuizParticipationException(ErrorCode.QUIZ_PARTICIPATION_SUBMITTED,
+                    "Phiên thi này đã được nộp trước đó");
         }
         
-        // 6. Return submission response
+        // 3. Check if session is still valid (not expired)
+        if (!session.isValid(submissionTime)) {
+            throw new QuizParticipationException(ErrorCode.QUIZ_PARTICIPATION_TIME_OVER,
+                    "Đã hết thời gian làm bài");
+        }
+        
+        // 4. Mark session as submitted
+        session.markAsSubmitted();
+        session = sessionRepository.save(session);
+        log.info("Session {} marked as submitted", sessionId);
+        
+        // 5. Create submission event
+        QuizSubmissionEvent event = createSubmissionEvent(session, request, submissionTime);
+        
+        // 6. Save event to outbox in the same transaction
+        OutboxEvent outboxEvent = outboxService.saveEvent(
+                sessionId,
+                "EXAM_SESSION", 
+                "QUIZ_SUBMISSION_CREATED",
+                event
+        );
+        
+        log.info("Saved submission event {} to outbox for session {}", outboxEvent.getId(), sessionId);
+        
+        // 7. Return submission response
         return SubmitQuizResponse.builder()
                 .sessionId(sessionId)
                 .message("Bài thi đã được nộp thành công và đang được chấm điểm")
@@ -193,17 +176,42 @@ public class ExamParticipationService {
     }
     
     /**
+     * Creates a submission event
+     */
+    private QuizSubmissionEvent createSubmissionEvent(ParticipationSession session, SubmitQuizRequest request, LocalDateTime submissionTime) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("clientIp", "127.0.0.1");  // In a real app, get from request context
+        metadata.put("userAgent", "ExamClient/1.0");
+        
+        return QuizSubmissionEvent.builder()
+                .messageId(UUID.randomUUID().toString())
+                .timestamp(LocalDateTime.now())
+                .eventType("QUIZ_SUBMISSION_CREATED")
+                .payload(QuizSubmissionEvent.PayloadData.builder()
+                        .examSessionId(session.getId())
+                        .startTime(session.getStartTime())
+                        .endTime(session.getEndTime())
+                        .studentId(session.getStudentId())
+                        .quizId(session.getQuizId())
+                        .submissionTime(submissionTime)
+                        .answers(request.getAnswers())
+                        .metadata(metadata)
+                        .build())
+                .build();
+    }
+    
+    /**
      * Gets questions for a quiz, with Redis caching
      */
     @SuppressWarnings("unchecked")
-    private List<QuestionResponse> getQuestionsForQuiz(String quizId) {
+    private List<QuizQuestion> getQuestionsForQuiz(String quizId) {
         // Tạo cache key
         String cacheKey = "quiz_questions:" + quizId;
         
         // Kiểm tra cache
-        List<QuestionResponse> cachedQuestions = null;
+        List<QuizQuestion> cachedQuestions = null;
         try {
-            cachedQuestions = (List<QuestionResponse>) redisTemplate.opsForValue().get(cacheKey);
+            cachedQuestions = (List<QuizQuestion>) redisTemplate.opsForValue().get(cacheKey);
         } catch (Exception e) {
             log.error("Error getting questions from cache", e);
         }
@@ -215,7 +223,7 @@ public class ExamParticipationService {
         
         // Cache miss, gọi đến Quiz Service thông qua Feign Client
         log.info("Cache miss for quiz questions: {}, fetching from Quiz Service", quizId);
-        List<QuestionResponse> questions;
+        List<QuizQuestion> questions;
         try {
             questions = quizServiceClient.getQuestionsForQuiz(quizId);
             
@@ -234,7 +242,7 @@ public class ExamParticipationService {
     /**
      * Builds the response DTO from a session and questions
      */
-    private ExamSessionResponse buildExamSessionResponse(ParticipationSession session, List<QuestionResponse> questions, QuizInfo quizInfo) {
+    private ExamSessionResponse buildExamSessionResponse(ParticipationSession session, List<QuizQuestion> questions, QuizInfo quizInfo) {
         return ExamSessionResponse.builder()
                 .sessionId(session.getId())
                 .quizInfo(quizInfo)

@@ -1,7 +1,6 @@
-package com.ptit.soa2025.quizparticipationservice.dto.event;
+package com.ptit.soa2025.resultservice.dto.event;
 
-import com.ptit.soa2025.quizparticipationservice.dto.QuizAnswer;
-import com.ptit.soa2025.quizparticipationservice.dto.StudentAnswer;
+import com.ptit.soa2025.resultservice.dto.StudentAnswer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +19,7 @@ public class QuizSubmissionEvent {
     private LocalDateTime timestamp;
     private String eventType;
     private PayloadData payload;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -35,6 +34,5 @@ public class QuizSubmissionEvent {
         private List<StudentAnswer> answers;
         private Map<String, Object> metadata;
     }
-
 
 }

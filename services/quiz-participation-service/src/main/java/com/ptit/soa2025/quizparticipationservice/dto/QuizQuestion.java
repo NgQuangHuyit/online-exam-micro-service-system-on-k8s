@@ -1,17 +1,15 @@
-package com.ptit.soa2025.quizparticipationservice.dto.response;
+package com.ptit.soa2025.quizparticipationservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuestionResponse {
+public class QuizQuestion {
     private String id;
     private String content;
     private String optionA;

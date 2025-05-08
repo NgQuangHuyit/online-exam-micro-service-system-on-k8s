@@ -2,7 +2,7 @@
 //
 //import com.ptit.soa2025.quizparticipationservice.dto.request.ValidateAccessCodeRequest;
 //import com.ptit.soa2025.quizparticipationservice.dto.response.AccessValidationResponse;
-//import com.ptit.soa2025.quizparticipationservice.dto.response.QuestionResponse;
+//import com.ptit.soa2025.quizparticipationservice.dto.QuizQuestion;
 //import com.ptit.soa2025.quizparticipationservice.exception.QuizServiceException;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
@@ -60,7 +60,7 @@
 //    }
 //
 //    @Override
-//    public List<QuestionResponse> getQuestionsForQuiz(String quizId) {
+//    public List<QuizQuestion> getQuestionsForQuiz(String quizId) {
 //        logger.info("Getting questions for quiz: {}", quizId);
 //
 //        try {
@@ -73,7 +73,7 @@
 //                                    .flatMap(error -> Mono.error(new QuizServiceException(
 //                                            "Error retrieving questions: " + error,
 //                                            response.statusCode()))))
-//                    .bodyToMono(new ParameterizedTypeReference<List<QuestionResponse>>() {})
+//                    .bodyToMono(new ParameterizedTypeReference<List<QuizQuestion>>() {})
 //                    .timeout(REQUEST_TIMEOUT)
 //                    .block();
 //        } catch (WebClientResponseException e) {

@@ -3,7 +3,7 @@ package com.ptit.soa2025.quizparticipationservice.client;
 import com.ptit.soa2025.quizparticipationservice.config.QuizClientConfig;
 import com.ptit.soa2025.quizparticipationservice.dto.request.ValidateAccessCodeRequest;
 import com.ptit.soa2025.quizparticipationservice.dto.response.AccessValidationResponse;
-import com.ptit.soa2025.quizparticipationservice.dto.response.QuestionResponse;
+import com.ptit.soa2025.quizparticipationservice.dto.QuizQuestion;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Feign Client for Quiz Service
@@ -36,5 +35,5 @@ public interface QuizServiceClient {
      * @return List of questions
      */
     @GetMapping("/quizzes/{quizId}/questions")
-    List<QuestionResponse> getQuestionsForQuiz(@PathVariable("quizId") String quizId);
+    List<QuizQuestion> getQuestionsForQuiz(@PathVariable("quizId") String quizId);
 }
