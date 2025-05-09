@@ -31,10 +31,7 @@ public class QuizAccessCode {
     
     @Column(name = "access_code", nullable = false, unique = true)
     private String accessCode;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private AccessCodeStatusEnum status;
+
     
     @Column(name = "valid_from")
     private LocalDateTime validFrom;
@@ -52,9 +49,6 @@ public class QuizAccessCode {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (status == null) {
-            status = AccessCodeStatusEnum.ACTIVE;
-        }
     }
     
     @PreUpdate

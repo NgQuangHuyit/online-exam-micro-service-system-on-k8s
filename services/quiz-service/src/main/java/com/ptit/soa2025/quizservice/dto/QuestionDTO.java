@@ -18,5 +18,5 @@ public class QuestionDTO {
     private String optionB;
     private String optionC;
     private String optionD;
-    private CorrectOptionEnum correctOption;
+//    private CorrectOptionEnum correctOption;
 }

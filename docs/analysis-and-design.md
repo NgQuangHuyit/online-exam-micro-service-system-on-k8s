@@ -84,7 +84,6 @@ Dưới đây là thiết kế dữ liệu chi tiết cho từng microservice:
     - `quiz_id` (Foreign Key): UUID
     - `student_id` (Foreign Key): String
     - `access_code`: String (unique)
-    - `status`: Enum (`ACTIVE`, `USED`, `EXPIRED`)
     - `valid_from`: Timestamp
     - `valid_until`: Timestamp
     - `created_at`: Timestamp

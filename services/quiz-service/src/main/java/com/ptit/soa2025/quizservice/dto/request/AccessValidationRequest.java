@@ -1,4 +1,4 @@
-package com.ptit.soa2025.quizservice.dto;
+package com.ptit.soa2025.quizservice.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
