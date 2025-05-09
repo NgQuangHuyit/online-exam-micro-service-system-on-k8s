@@ -1,7 +1,7 @@
 package com.ptit.soa2025.quizservice.controller;
 
-
-import com.ptit.soa2025.quizservice.dto.QuizDTO;
+import com.ptit.soa2025.quizservice.dto.AnswerDTO;
+import com.ptit.soa2025.quizservice.dto.QuestionDTO;
 import com.ptit.soa2025.quizservice.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,11 +22,31 @@ public class QuizController {
         this.quizService = quizService;
     }
 
-
-    
     @GetMapping("/{quizId}/allowed-students")
     public ResponseEntity<List<String>> getAllowedStudentsForQuiz(@PathVariable UUID quizId) {
         List<String> allowedStudents = quizService.getAllowedStudentsForQuiz(quizId);
         return ResponseEntity.ok(allowedStudents);
+    }
+    
+    @GetMapping("/{quizId}/questions")
+    public ResponseEntity<?> getQuizQuestions(@PathVariable UUID quizId) {
+        try {
+            List<QuestionDTO> questions = quizService.getQuizQuestions(quizId);
+            return ResponseEntity.ok(questions);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Quiz not found with id: " + quizId);
+        }
+    }
+    
+    @GetMapping("/{quizId}/answers")
+    public ResponseEntity<?> getQuizAnswers(@PathVariable UUID quizId) {
+        try {
+            List<AnswerDTO> answers = quizService.getQuizAnswers(quizId);
+            return ResponseEntity.ok(answers);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Quiz not found with id: " + quizId);
+        }
     }
 }
