@@ -41,6 +41,9 @@ public class Quiz {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "duration")
+    private Integer duration; // Duration in minutes
     
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions = new ArrayList<>();

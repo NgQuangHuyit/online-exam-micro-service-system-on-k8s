@@ -5,7 +5,7 @@ info:
   version: 1.0.0
 
 paths:
-  /{quizId}/allowed-students:
+  /quizzes/{quizId}/allowed-students:
     get:
       summary: Lấy danh sách sinh viên được phép tham gia bài thi
       description: Trả về danh sách ID sinh viên được phép tham gia bài thi dựa vào mã truy cập hợp lệ
@@ -30,13 +30,13 @@ paths:
         '404':
           description: Không tìm thấy bài thi
   
-  /{quizId}/access-validate:
+  /quizzes/access-validate:
     post:
       summary: Xác thực mã truy cập
       description: Kiểm tra tính hợp lệ của mã truy cập, sinh viên và thời gian
       parameters:
         - name: quizId
-          in: path
+          in: query
           required: true
           schema:
             type: string
@@ -73,7 +73,7 @@ paths:
                 properties:
                   message:
                     type: string
-  /{quizId}/questions:
+  /quizzes/{quizId}/questions:
     get:
       summary: Lấy danh sách câu hỏi của bài thi
       description: Trả về danh sách câu hỏi cho một bài thi cụ thể
@@ -173,13 +173,6 @@ components:
         valid:
           type: boolean
           description: Trạng thái xác thực
-        accessCodeId:
-          type: string
-          format: uuid
-          description: ID của mã truy cập
-        message:
-          type: string
-          description: Thông báo kết quả xác thực
         studentId:
           type: string
           description: ID của sinh viên
@@ -206,7 +199,5 @@ components:
             - duration
       required:
         - valid
-        - message
-        - accessCodeId
         - studentId
         - quizInfo

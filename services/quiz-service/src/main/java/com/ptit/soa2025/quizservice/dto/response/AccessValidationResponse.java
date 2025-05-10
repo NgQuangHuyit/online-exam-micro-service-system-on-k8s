@@ -13,8 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AccessValidationResponse {
     private boolean valid;
-    private UUID accessCodeId;
-    private String message;
     private String studentId;
     private QuizInfo quizInfo;
 

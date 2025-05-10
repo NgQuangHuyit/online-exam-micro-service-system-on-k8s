@@ -4,18 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuizDTO {
-    private UUID id;
+public class QuizInfoDTO {
+    private UUID quizId;
     private String title;
     private String description;
-    private LocalDateTime validFrom;
-    private LocalDateTime validUntil;
     private List<QuestionDTO> questions;
 }

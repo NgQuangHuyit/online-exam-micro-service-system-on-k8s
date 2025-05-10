@@ -20,7 +20,7 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: quizdb
+      MYSQL_DATABASE: quiz_db
       MYSQL_USER: quizuser
       MYSQL_PASSWORD: quizpassword
     volumes:
@@ -108,6 +108,7 @@ services:
       context: ./services/quiz-service
       dockerfile: Dockerfile
     hostname: quiz-service
+
     ports:
       - "8082:8081"
     networks:

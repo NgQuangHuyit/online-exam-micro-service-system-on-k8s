@@ -11,8 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionDTO {
-    private UUID id;
-    private UUID quizId;
+    private UUID questionId;
     private String content;
     private String optionA;
     private String optionB;

@@ -2,6 +2,8 @@ package com.ptit.soa2025.quizservice.controller;
 
 import com.ptit.soa2025.quizservice.dto.AnswerDTO;
 import com.ptit.soa2025.quizservice.dto.QuestionDTO;
+import com.ptit.soa2025.quizservice.dto.request.AccessValidationRequest;
+import com.ptit.soa2025.quizservice.dto.response.AccessValidationResponse;
 import com.ptit.soa2025.quizservice.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,5 +50,12 @@ public class QuizController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body("Quiz not found with id: " + quizId);
         }
+    }
+
+    @PostMapping("/access-validate")
+    public ResponseEntity<?> validateQuizAccess( @RequestParam("quizId") UUID quizId,
+                                                 @RequestBody AccessValidationRequest request) {
+        AccessValidationResponse response = quizService.validateQuizAccess(request, quizId);
+        return ResponseEntity.ok(response);
     }
 }

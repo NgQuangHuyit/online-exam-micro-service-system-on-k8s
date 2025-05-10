@@ -1,8 +1,10 @@
 package com.ptit.soa2025.quizservice.service.impl;
 
 import com.ptit.soa2025.quizservice.dto.QuestionDTO;
-import com.ptit.soa2025.quizservice.dto.QuizDTO;
+import com.ptit.soa2025.quizservice.dto.QuizInfoDTO;
 import com.ptit.soa2025.quizservice.dto.AnswerDTO;
+import com.ptit.soa2025.quizservice.dto.request.AccessValidationRequest;
+import com.ptit.soa2025.quizservice.dto.response.AccessValidationResponse;
 import com.ptit.soa2025.quizservice.entity.Question;
 import com.ptit.soa2025.quizservice.entity.Quiz;
 import com.ptit.soa2025.quizservice.entity.QuizAccessCode;
@@ -27,34 +29,32 @@ public class QuizServiceImpl implements QuizService {
     private final QuizAccessCodeRepository accessCodeRepository;
     private final EntityMapper entityMapper;
 
-    @Override
-    public QuizDTO getQuizById(UUID id) {
-        Quiz quiz = quizRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + id));
-        List<Question> questions = questionRepository.findByQuizId(id);
-        return entityMapper.toQuizDTO(quiz, questions);
-    }
-
-    @Override
-    public List<QuizDTO> getAllQuizzes() {
-        List<Quiz> quizzes = quizRepository.findAll();
-        return quizzes.stream()
-                .map(quiz -> {
-                    List<Question> questions = questionRepository.findByQuizId(quiz.getId());
-                    return entityMapper.toQuizDTO(quiz, questions);
-                })
-                .collect(Collectors.toList());
-    }
+//    @Override
+//    public QuizInfoDTO getQuizById(UUID id) {
+//        Quiz quiz = quizRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + id));
+//        List<Question> questions = questionRepository.findByQuizId(id);
+//        return entityMapper.toQuizDTO(quiz, questions);
+//    }
+//
+//    @Override
+//    public List<QuizInfoDTO> getAllQuizzes() {
+//        List<Quiz> quizzes = quizRepository.findAll();
+//        return quizzes.stream()
+//                .map(quiz -> {
+//                    List<Question> questions = questionRepository.findByQuizId(quiz.getId());
+//                    return entityMapper.toQuizDTO(quiz, questions);
+//                })
+//                .collect(Collectors.toList());
+//    }
 
     @Override
     public List<String> getAllowedStudentsForQuiz(UUID quizId) {
-        // Check if quiz exists
-        if (!quizRepository.existsById(quizId)) {
-            throw new RuntimeException("Quiz not found with id: " + quizId);
-        }
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + quizId));
         
         // Get all active access codes for the quiz
-        return accessCodeRepository.findByQuizId(quizId)
+        return accessCodeRepository.findByQuiz(quiz)
                 .stream()
                 .map(QuizAccessCode::getStudentId)
                 .distinct()
@@ -67,14 +67,14 @@ public class QuizServiceImpl implements QuizService {
         if (!quizRepository.existsById(quizId)) {
             throw new RuntimeException("Quiz not found with id: " + quizId);
         }
-        
+
         // Retrieve all questions for the quiz
         List<Question> questions = questionRepository.findByQuizId(quizId);
-        
-        // Convert to DTOs without including the correct option using our mapper
+
+        // Convert to answer DTOs with the correct options
         return questions.stream()
-            .map(question -> entityMapper.toQuestionDTO(question, quizId))
-            .collect(Collectors.toList());
+                .map(entityMapper::toQuestionDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -91,5 +91,33 @@ public class QuizServiceImpl implements QuizService {
         return questions.stream()
             .map(entityMapper::toAnswerDTO)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public AccessValidationResponse validateQuizAccess(AccessValidationRequest accessValidationRequest, UUID quizId) {
+        // check if quiz exists
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + quizId));
+
+        QuizAccessCode accessCode = accessCodeRepository.findByQuizAndStudentId(quiz, accessValidationRequest.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Access code not found for quiz: " + quizId + " and student: " + accessValidationRequest.getStudentId()));
+        if (accessCode.getAccessCode() != accessValidationRequest.getAccessCode()) {
+            throw new RuntimeException("Access code mismatch");
+        }
+        return AccessValidationResponse.builder()
+                .studentId(accessValidationRequest.getStudentId())
+                .valid(true)
+                .quizInfo(AccessValidationResponse.QuizInfo.builder()
+                        .quizId(quiz.getId())
+                        .title(quiz.getTitle())
+                        .description(quiz.getDescription())
+                        .duration(quiz.getDuration())
+                        .build())
+                .build();
+
+        // check if access code is valid
+
+
+
     }
 }

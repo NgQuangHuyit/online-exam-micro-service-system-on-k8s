@@ -3,7 +3,7 @@ package com.ptit.soa2025.quizservice.mapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.soa2025.quizservice.dto.AnswerDTO;
 import com.ptit.soa2025.quizservice.dto.QuestionDTO;
-import com.ptit.soa2025.quizservice.dto.QuizDTO;
+import com.ptit.soa2025.quizservice.dto.QuizInfoDTO;
 import com.ptit.soa2025.quizservice.dto.QuizAccessCodeDTO;
 import com.ptit.soa2025.quizservice.entity.Question;
 import com.ptit.soa2025.quizservice.entity.Quiz;
@@ -24,37 +24,34 @@ public class EntityMapper {
     private final ObjectMapper objectMapper;
     
     /**
-     * Convert Quiz entity to QuizDTO including questions
+     * Convert Quiz entity to QuizInfoDTO including questions
      * 
      * @param quiz Quiz entity
      * @param questions List of Question entities
-     * @return QuizDTO
+     * @return QuizInfoDTO
      */
-    public QuizDTO toQuizDTO(Quiz quiz, List<Question> questions) {
-        QuizDTO quizDTO = objectMapper.convertValue(quiz, QuizDTO.class);
-        
-        List<QuestionDTO> questionDTOs = questions.stream()
-                .map(question -> {
-                    QuestionDTO dto = objectMapper.convertValue(question, QuestionDTO.class);
-                    dto.setQuizId(quiz.getId());
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        
-        quizDTO.setQuestions(questionDTOs);
-        return quizDTO;
-    }
+//    public QuizInfoDTO toQuizDTO(List<Question> questions) {
+//
+//        List<QuestionDTO> questionDTOs = questions.stream()
+//                .map(question -> {
+//                    QuestionDTO dto = objectMapper.convertValue(question, QuestionDTO.class);
+//                    return dto;
+//                })
+//                .collect(Collectors.toList());
+//
+//        return quizDTO;
+//    }
     
     /**
      * Convert Question entity to QuestionDTO without correct answer
      * 
      * @param question Question entity
-     * @param quizId Quiz ID
      * @return QuestionDTO
      */
-    public QuestionDTO toQuestionDTO(Question question, UUID quizId) {
-        QuestionDTO dto = objectMapper.convertValue(question, QuestionDTO.class);
-        dto.setQuizId(quizId);
+    public QuestionDTO toQuestionDTO(Question question) {
+        QuestionDTO dto = new QuestionDTO();
+        dto.setQuestionId(question.getId());
+        dto.setContent(question.getContent());
         // Explicitly set correctOption to null to ensure it's not included
         dto.setOptionA(question.getOptionA());
         dto.setOptionB(question.getOptionB());
