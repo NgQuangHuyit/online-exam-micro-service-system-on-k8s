@@ -1,5 +1,6 @@
 package com.ptit.soa2025.quizservice.exception;
 
+import com.ptit.soa2025.quizservice.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -32,5 +33,21 @@ public class GlobalExceptionHandler {
         body.put("error", ex.getMessage());
         
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(InvalidAccessException.class)
+    public ResponseEntity<Object> handlerInvalidAccessEx(InvalidAccessException ex) {
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(ex.getMessage());
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AccessTimeInvalidException.class)
+    public ResponseEntity<Object> handlerAccessTimeInvalidEx(AccessTimeInvalidException ex) {
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(ex.getMessage());
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 }

@@ -23,7 +23,9 @@ public class QuizAccessCode {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id", nullable = false)
     private Quiz quiz;
-    
+//    @Id
+//    @Column(name = "quiz_id", nullable = false)
+//    private String quizId;
     // Second part of composite primary key
     @Id
     @Column(name = "student_id", nullable = false)
@@ -56,9 +58,9 @@ public class QuizAccessCode {
     }
     
     // Helper method to get the quiz ID without loading the entire Quiz object
-    public UUID getQuizId() {
-        return this.quiz != null ? this.quiz.getId() : null;
-    }
+//    public UUID getQuizId() {
+//        return this.quiz != null ? this.quiz.getId() : null;
+//    }
     
     /**
      * Composite primary key class for QuizAccessCode

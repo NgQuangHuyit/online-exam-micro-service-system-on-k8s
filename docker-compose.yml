@@ -20,9 +20,6 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: quiz_db
-      MYSQL_USER: quizuser
-      MYSQL_PASSWORD: quizpassword
     volumes:
       - mysql-data:/var/lib/mysql
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -108,9 +105,12 @@ services:
       context: ./services/quiz-service
       dockerfile: Dockerfile
     hostname: quiz-service
-
+    environment:
+      DB_PASSWORD: password
+      DB_USERNAME: root
+      DB_URL: jdbc:mysql://mysql:3306/quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     ports:
-      - "8082:8081"
+      - "8082:8080"
     networks:
       - quiz-network
   
@@ -121,7 +121,7 @@ services:
       dockerfile: Dockerfile
     container_name: quiz-participation-service
     ports:
-      - "8083:8083"
+      - "8083:8080"
     depends_on:
       - mysql
       - redis
@@ -130,7 +130,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka1:19092
       KAFKA_GROUP_ID: quiz-participation-service
       KAFKA_SUBMISSION_TOPIC: quiz-submissions
-      QUIZ_SERVICE_URL: quiz-service:8081
+      QUIZ_SERVICE_URL: quiz-service:8080
       DB_PASSWORD: password
       DB_USERNAME: root
       DB_URL: jdbc:mysql://mysql:3306/quiz_participation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

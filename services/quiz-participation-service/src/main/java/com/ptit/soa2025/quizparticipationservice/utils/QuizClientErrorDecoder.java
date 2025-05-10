@@ -13,8 +13,9 @@ public class QuizClientErrorDecoder implements ErrorDecoder {
     @Override
     public Exception decode(String methodKey, Response response) {
         return switch (response.status()) {
-            case 400 -> new ChangeSetPersister.NotFoundException();
+            case 400 -> new QuizParticipationException(ErrorCode.QUIZ_NOT_FOUND);
             case 401 -> new QuizParticipationException(ErrorCode.WRONG_ACCESS_CODE);
+            case 403 -> new QuizParticipationException(ErrorCode.NOT_IN_ALLOWED_TIME);
             default -> defaultDecoder.decode(methodKey, response);
         };
     }

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizQuestion {
-    private String id;
+    private String questionId;
     private String content;
     private String optionA;
     private String optionB;
