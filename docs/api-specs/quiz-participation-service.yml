@@ -167,7 +167,7 @@ components:
     Question:
       type: object
       properties:
-        id:
+        questionId:
           type: string
           format: uuid
         content:
@@ -200,7 +200,7 @@ components:
           type: string
           format: uuid
           description: ID của câu hỏi
-        selectedOption:
+        studentAnswer:
           type: string
           enum: [A, B, C, D]
           description: Đáp án được chọn
