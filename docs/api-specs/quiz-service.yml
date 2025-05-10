@@ -126,7 +126,7 @@ components:
     Question:
       type: object
       properties:
-        id:
+        questionId:
           type: string
           format: uuid
         content:
@@ -145,7 +145,7 @@ components:
           type: string
           description: Đáp án D
       required:
-        - id
+        - questionId
         - content
         - optionA
         - optionB
