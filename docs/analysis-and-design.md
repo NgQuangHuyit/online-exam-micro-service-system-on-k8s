@@ -82,9 +82,8 @@ Dưới đây là thiết kế dữ liệu chi tiết cho từng microservice:
   - Bảng `quiz_access_codes`:
     - `id` (Primary Key): UUID
     - `quiz_id` (Foreign Key): UUID
-    - `student_id` (Foreign Key): UUID
+    - `student_id` (Foreign Key): String
     - `access_code`: String (unique)
-    - `status`: Enum (`ACTIVE`, `USED`, `EXPIRED`)
     - `valid_from`: Timestamp
     - `valid_until`: Timestamp
     - `created_at`: Timestamp
@@ -94,7 +93,7 @@ Dưới đây là thiết kế dữ liệu chi tiết cho từng microservice:
 - **Mô hình dữ liệu:**
   - Bảng `exam_sessions`:
     - `id` (Primary Key): UUID
-    - `student_id` (Foreign Key): UUID
+    - `student_id` (Foreign Key): String
     - `quiz_id` (Foreign Key): UUID
     - `start_time`: Timestamp
     - `end_time`: Timestamp
