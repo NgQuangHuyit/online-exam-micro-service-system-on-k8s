@@ -1,13 +1,14 @@
 package com.ptit.soa2025.quizservice.service.impl;
 
 import com.ptit.soa2025.quizservice.dto.QuestionDTO;
-import com.ptit.soa2025.quizservice.dto.QuizInfoDTO;
 import com.ptit.soa2025.quizservice.dto.AnswerDTO;
 import com.ptit.soa2025.quizservice.dto.request.AccessValidationRequest;
 import com.ptit.soa2025.quizservice.dto.response.AccessValidationResponse;
 import com.ptit.soa2025.quizservice.entity.Question;
 import com.ptit.soa2025.quizservice.entity.Quiz;
 import com.ptit.soa2025.quizservice.entity.QuizAccessCode;
+import com.ptit.soa2025.quizservice.exception.AccessTimeInvalidException;
+import com.ptit.soa2025.quizservice.exception.InvalidAccessException;
 import com.ptit.soa2025.quizservice.mapper.EntityMapper;
 import com.ptit.soa2025.quizservice.repository.QuestionRepository;
 import com.ptit.soa2025.quizservice.repository.QuizAccessCodeRepository;
@@ -16,6 +17,7 @@ import com.ptit.soa2025.quizservice.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -99,11 +101,22 @@ public class QuizServiceImpl implements QuizService {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("Quiz not found with id: " + quizId));
 
-        QuizAccessCode accessCode = accessCodeRepository.findByQuizAndStudentId(quiz, accessValidationRequest.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Access code not found for quiz: " + quizId + " and student: " + accessValidationRequest.getStudentId()));
-        if (accessCode.getAccessCode() != accessValidationRequest.getAccessCode()) {
-            throw new RuntimeException("Access code mismatch");
+//        QuizAccessCode accessCode = accessCodeRepository.e(quizId, accessValidationRequest.getStudentId())
+//                .orElseThrow(() -> new RuntimeException("Access code not found for quiz: " + quizId + " and student: " + accessValidationRequest.getStudentId()));
+//        if (accessCode.getAccessCode() != accessValidationRequest.getAccessCode()) {
+//            throw new RuntimeException("Access code mismatch");
+//        }
+        QuizAccessCode accessCode = accessCodeRepository.findQuizAccessCodesByQuizIdAndStudentId(quizId, accessValidationRequest.getStudentId());
+        if (accessCode == null) {
+            throw new InvalidAccessException("Access not allow for quiz: " + quizId + " and student: " + accessValidationRequest.getStudentId());
         }
+        if (!accessCode.getAccessCode().equals(accessValidationRequest.getAccessCode())) {
+            throw new InvalidAccessException("Access code mismatch");
+        }
+        if (accessCode.getValidFrom() != null && (accessCode.getValidFrom().isAfter(LocalDateTime.now()) && accessCode.getValidUntil() != null || accessCode.getValidUntil().isBefore(LocalDateTime.now()))) {
+            throw new AccessTimeInvalidException("Ngoai thoi gian cho phep");
+        }
+//        boolean valid = accessCodeRepository.existsQuizAccessCodeByQuizAndStudentIdAndAccessCode(quiz, accessValidationRequest.getStudentId(), accessValidationRequest.getAccessCode());
         return AccessValidationResponse.builder()
                 .studentId(accessValidationRequest.getStudentId())
                 .valid(true)

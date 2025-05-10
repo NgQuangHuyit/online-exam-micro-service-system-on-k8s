@@ -6,10 +6,7 @@ import com.ptit.soa2025.quizparticipationservice.dto.response.AccessValidationRe
 import com.ptit.soa2025.quizparticipationservice.dto.QuizQuestion;
 
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,8 +22,8 @@ public interface QuizServiceClient {
      * @param request DTO containing studentId and accessCode
      * @return AccessValidationResponse containing validation result
      */
-    @PostMapping("/quizzes/{quizId}/access-validate")
-    AccessValidationResponse validateAccessCode(@PathVariable("quizId") String quizId,
+    @PostMapping("/quizzes/access-validate")
+    AccessValidationResponse validateAccessCode(@RequestParam("quizId") String quizId,
                                                @RequestBody ValidateAccessCodeRequest request);
 
     /**
