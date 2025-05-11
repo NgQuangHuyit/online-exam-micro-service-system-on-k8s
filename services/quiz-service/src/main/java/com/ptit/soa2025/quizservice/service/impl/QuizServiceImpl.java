@@ -9,6 +9,7 @@ import com.ptit.soa2025.quizservice.entity.Quiz;
 import com.ptit.soa2025.quizservice.entity.QuizAccessCode;
 import com.ptit.soa2025.quizservice.exception.AccessTimeInvalidException;
 import com.ptit.soa2025.quizservice.exception.InvalidAccessException;
+import com.ptit.soa2025.quizservice.exception.QuizNotFoundException;
 import com.ptit.soa2025.quizservice.mapper.EntityMapper;
 import com.ptit.soa2025.quizservice.repository.QuestionRepository;
 import com.ptit.soa2025.quizservice.repository.QuizAccessCodeRepository;
@@ -132,5 +133,17 @@ public class QuizServiceImpl implements QuizService {
 
 
 
+    }
+
+    @Override
+    public AccessValidationResponse.QuizInfo getQuizInfo(UUID quizId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new QuizNotFoundException("Quiz not found with id: " + quizId));
+        return AccessValidationResponse.QuizInfo.builder()
+                .quizId(quiz.getId())
+                .title(quiz.getTitle())
+                .description(quiz.getDescription())
+                .duration(quiz.getDuration())
+                .build();
     }
 }

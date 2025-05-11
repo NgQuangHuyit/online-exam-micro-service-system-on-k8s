@@ -16,4 +16,5 @@ public interface QuizService {
     List<QuestionDTO> getQuizQuestions(UUID quizId);
     List<AnswerDTO> getQuizAnswers(UUID quizId);
     AccessValidationResponse validateQuizAccess(AccessValidationRequest accessValidationRequest, UUID quizId);
+    AccessValidationResponse.QuizInfo getQuizInfo(UUID quizId);
 }
