@@ -164,6 +164,23 @@ services:
       KAFKA_CONSUMER_GROUP: result-service-group
       KAFKA_NOTIFICATION_TOPIC: notifications
       QUIZ_SERVICE_URL: quiz-service:8080
+    networks:
+      - quiz-network
+
+  api-gateway:
+    image: api-gateway:latest
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - quiz-service
+      - quiz-participation-service
+      - result-service
+    networks:
+      - quiz-network
 volumes:
   redis-data:
   mysql-data:
