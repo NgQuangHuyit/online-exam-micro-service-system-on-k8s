@@ -50,4 +50,12 @@ public class GlobalExceptionHandler {
         response.setStatus(HttpStatus.FORBIDDEN.value());
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
+
+    @ExceptionHandler(QuizNotFoundException.class)
+    public ResponseEntity<Object> handlerQuizNotFound(QuizNotFoundException ex) {
+        ErrorResponse response = new ErrorResponse();
+        response.setMessage(ex.getMessage());
+        response.setStatus(HttpStatus.NOT_FOUND.value());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
 }

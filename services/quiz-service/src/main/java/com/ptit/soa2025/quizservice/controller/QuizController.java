@@ -57,4 +57,16 @@ public class QuizController {
         AccessValidationResponse response = quizService.validateQuizAccess(request, quizId);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{quizId}/info")
+    public ResponseEntity<?> getQuizInfo(@PathVariable UUID quizId) {
+        try {
+            List<QuestionDTO> questions = quizService.getQuizQuestions(quizId);
+            List<AnswerDTO> answers = quizService.getQuizAnswers(quizId);
+            return ResponseEntity.ok(new QuizInfoDTO(questions, answers));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Quiz not found with id: " + quizId);
+        }
+    }
 }
