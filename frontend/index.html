@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="title">Quiz Loading...</h1>
+            <div id="error" class="error hidden"></div>
+            <div id="success" class="success hidden"></div>
+        </header>
+        
+        <section class="quiz-info">
+            <div class="info-card">
+                <p id="description">Loading description...</p>
+                <p id="duration">Duration: Loading...</p>
+                <p id="allowed" class="hidden">Allowed Students: Loading...</p>
+            </div>
+        </section>
+        
+        <section class="quiz-action">
+            <div class="student-id-input">
+                <label for="studentId">Enter your Student ID:</label>
+                <select id="studentId" placeholder="Select your Student ID">
+                    <option value="">Select your ID</option>
+                </select>
+                <button id="proceedButton">Proceed</button>
+                <p id="studentError" class="error hidden"></p>
+            </div>
+        </section>
+        
+        <!-- Modal for access code -->
+        <div id="accessCodeModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Enter Access Code</h2>
+                <p>Please enter the access code to start the quiz</p>
+                <input type="text" id="accessCode" placeholder="Access Code">
+                <button id="submitAccessCode">Submit</button>
+                <p id="accessCodeError" class="error hidden"></p>
+            </div>
+        </div>
+        
+        <!-- Quiz taking interface (initially hidden) -->
+        <section id="quizInterface" class="hidden">
+            <div class="quiz-timer-section">
+                <div class="quiz-timer">
+                    <span id="timer">Time remaining: --:--:--</span>
+                </div>
+                <button id="submitQuiz">Submit Quiz</button>
+            </div>
+            
+            <div class="questions-container" id="allQuestions">
+                <!-- Questions will be added here -->
+            </div>
+            
+            <div class="submit-section">
+                <button id="submitQuizBottom" class="submit-button">Submit Quiz</button>
+            </div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
