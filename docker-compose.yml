@@ -8,7 +8,6 @@ services:
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes --requirepass redis123
-    restart: unless-stopped
     networks:
       - quiz-network
   # MySQL
@@ -29,7 +28,6 @@ services:
   # MongoDB
   mongodb:
     image: mongo:6.0
-    restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
@@ -153,6 +151,8 @@ services:
       - kafka1
       - mongodb
     environment:
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
       MONGO_DATABASE: resultdb
       MONGO_PASSWORD: rootpassword
       MONGO_USERNAME: root

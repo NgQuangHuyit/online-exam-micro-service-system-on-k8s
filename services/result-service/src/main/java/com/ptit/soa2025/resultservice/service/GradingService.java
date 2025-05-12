@@ -117,7 +117,7 @@ public class GradingService {
             
             // Lưu vào MongoDB
             result = resultRepository.save(result);
-            log.info("Grading completed for session: {}, score: {}/{}", 
+            log.info("Grading completed for session: {} -- {}/{} correct answers",
                     examSessionId, totalScore, submittedAnswers.size());
             
             return result;

@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -247,8 +248,8 @@ public class ExamParticipationService {
                 .sessionId(session.getId())
                 .quizInfo(quizInfo)
                 .studentId(session.getStudentId())
-                .startTime(session.getStartTime())
-                .endTime(session.getEndTime())
+                .startTime(session.getStartTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                .endTime(session.getEndTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                 .status(session.getStatus())
                 .questions(questions)
                 .build();

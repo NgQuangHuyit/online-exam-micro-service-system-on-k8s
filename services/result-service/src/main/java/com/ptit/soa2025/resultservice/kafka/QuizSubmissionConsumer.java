@@ -28,8 +28,8 @@ public class QuizSubmissionConsumer {
         try {
             // Xử lý chấm bài
             QuizResult result = gradingService.processSubmission(message);
-            log.info("Successfully graded quiz for session: {}, score: {}/{}",
-                    result.getExamSessionId(), result.getScore(), result.getTotalQuestions());
+            log.info("Successfully graded quiz for session: {}, score: {}",
+                    result.getExamSessionId(), result.getScore());
                     
             // Xác nhận đã xử lý message thành công
             acknowledgment.acknowledge();

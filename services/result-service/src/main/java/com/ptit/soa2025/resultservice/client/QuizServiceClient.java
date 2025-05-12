@@ -11,6 +11,6 @@ import java.util.Map;
 @FeignClient(name = "quiz-service", url = "${services.quiz-service.url}")
 public interface QuizServiceClient {
     
-    @GetMapping("/quizzes/{quizId}/answers")
+    @GetMapping("/{quizId}/answers")
     List<QuizAnswer> getQuizAnswers(@PathVariable("quizId") String quizId);
 }

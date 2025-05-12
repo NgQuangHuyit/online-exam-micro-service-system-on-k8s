@@ -19,8 +19,8 @@ public class ExamSessionResponse {
     private String sessionId;
     private QuizInfo quizInfo;
     private String studentId;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private Long startTime;
+    private Long endTime;
     private SessionStatus status;
     private List<QuizQuestion> questions;
 }
