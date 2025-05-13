@@ -22,7 +22,7 @@ public interface QuizServiceClient {
      * @param request DTO containing studentId and accessCode
      * @return AccessValidationResponse containing validation result
      */
-    @PostMapping("/quizzes/access-validate")
+    @PostMapping("/access-validate")
     AccessValidationResponse validateAccessCode(@RequestParam("quizId") String quizId,
                                                @RequestBody ValidateAccessCodeRequest request);
 
@@ -31,6 +31,6 @@ public interface QuizServiceClient {
      * @param quizId ID of the quiz
      * @return List of questions
      */
-    @GetMapping("/quizzes/{quizId}/questions")
+    @GetMapping("/{quizId}/questions")
     List<QuizQuestion> getQuestionsForQuiz(@PathVariable("quizId") String quizId);
 }

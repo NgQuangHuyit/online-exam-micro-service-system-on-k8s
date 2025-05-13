@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: result-service
+  namespace: ptit-quiz-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: result-service
+  template:
+    metadata:
+      labels:
+        app: result-service
+    spec:
+      containers:
+        - name: result-service
+          image: ngquanghuyit/result-service:v1.0.1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_HOST
+              value: mongodb
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_DATABASE
+              value: resultdb
+            - name: MONGO_USERNAME
+              value: root
+            - name: MONGO_PASSWORD
+              value: rootpassword
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              value: redis123
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka1:19092
+            - name: KAFKA_SUBMISSION_TOPIC
+              value: quiz-submissions
+            - name: KAFKA_CONSUMER_GROUP
+              value: result-service-group
+            - name: KAFKA_NOTIFICATION_TOPIC
+              value: notifications
+            - name: QUIZ_SERVICE_URL
+              value: quiz-service:8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: result-service
+  namespace: ptit-quiz-app
+spec:
+  selector:
+    app: result-service
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

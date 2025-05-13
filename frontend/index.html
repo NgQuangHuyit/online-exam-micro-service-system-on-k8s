@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz System</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="module" src="script.js"></script>
 </head>
 <body>
     <div class="container">
@@ -17,18 +19,34 @@
         <section class="quiz-info">
             <div class="info-card">
                 <p id="description">Loading description...</p>
-                <p id="duration">Duration: Loading...</p>
-                <p id="allowed" class="hidden">Allowed Students: Loading...</p>
+                <div class="info-details">
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <span id="duration">Loading...</span>
+                    </div>
+                </div>
+                <div id="allowed" class="allowed-students hidden">
+                    <i class="fas fa-users"></i>
+                    <span>Allowed Students: Loading...</span>
+                </div>
             </div>
         </section>
         
         <section class="quiz-action">
             <div class="student-id-input">
-                <label for="studentId">Enter your Student ID:</label>
-                <select id="studentId" placeholder="Select your Student ID">
-                    <option value="">Select your ID</option>
-                </select>
-                <button id="proceedButton">Proceed</button>
+                <label for="studentSearch">Select your Student ID:</label>
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="studentSearch" placeholder="Search for your ID">
+                </div>
+                <div class="student-list-container">
+                    <div id="studentList" class="student-list"></div>
+                </div>
+                <div class="selected-student-container">
+                    <div class="selected-student-label">Selected Student ID:</div>
+                    <div id="selectedStudentId" class="selected-student">None selected</div>
+                </div>
+                <button id="proceedButton" disabled><i class="fas fa-arrow-right"></i> Proceed</button>
                 <p id="studentError" class="error hidden"></p>
             </div>
         </section>
@@ -39,8 +57,11 @@
                 <span class="close">&times;</span>
                 <h2>Enter Access Code</h2>
                 <p>Please enter the access code to start the quiz</p>
-                <input type="text" id="accessCode" placeholder="Access Code">
-                <button id="submitAccessCode">Submit</button>
+                <div class="access-code-input">
+                    <i class="fas fa-key"></i>
+                    <input type="text" id="accessCode" placeholder="Access Code">
+                </div>
+                <button id="submitAccessCode"><i class="fas fa-check"></i> Submit</button>
                 <p id="accessCodeError" class="error hidden"></p>
             </div>
         </div>
@@ -49,20 +70,30 @@
         <section id="quizInterface" class="hidden">
             <div class="quiz-timer-section">
                 <div class="quiz-timer">
-                    <span id="timer">Time remaining: --:--:--</span>
+                    <i class="fas fa-hourglass-half"></i>
+                    <span id="timer">--:--:--</span>
                 </div>
-                <button id="submitQuiz">Submit Quiz</button>
+                <button id="submitQuiz"><i class="fas fa-paper-plane"></i> Submit Quiz</button>
             </div>
             
             <div class="questions-container" id="allQuestions">
                 <!-- Questions will be added here -->
             </div>
             
+            <div class="progress-container">
+                <div class="progress-label">
+                    <span>Quiz Progress</span>
+                    <span id="progressText">0/0</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+            </div>
+            
             <div class="submit-section">
-                <button id="submitQuizBottom" class="submit-button">Submit Quiz</button>
+                <button id="submitQuizBottom" class="submit-button"><i class="fas fa-paper-plane"></i> Submit Quiz</button>
             </div>
         </section>
     </div>
-    <script src="script.js"></script>
 </body>
 </html>
