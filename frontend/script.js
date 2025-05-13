@@ -1,3 +1,6 @@
+// Import the config file
+import config from './config.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const quizId = params.get('quizId');
@@ -9,7 +12,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const allowedEl = document.getElementById('allowed');
     const errorEl = document.getElementById('error');
     const successEl = document.getElementById('success');
-    const studentIdSelect = document.getElementById('studentId');
+    const studentSearchInput = document.getElementById('studentSearch');
+    const studentList = document.getElementById('studentList');
+    const selectedStudentIdEl = document.getElementById('selectedStudentId');
     const proceedButton = document.getElementById('proceedButton');
     const studentErrorEl = document.getElementById('studentError');
     
@@ -32,10 +37,91 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Quiz data
     let allowedStudents = [];
+    let selectedStudentId = '';
     let quizData = null;
     let sessionData = null;
     let answers = {}; // Store user answers: { questionId: 'A'/'B'/'C'/'D' }
     let timerInterval = null;
+    
+    // Helper function to handle API errors
+    const handleApiError = async (response, defaultMessage, errorElement) => {
+        try {
+            const errorData = await response.json();
+            errorElement.textContent = errorData.message || defaultMessage;
+            errorElement.classList.remove('hidden');
+            return errorData;
+        } catch (error) {
+            errorElement.textContent = defaultMessage;
+            errorElement.classList.remove('hidden');
+            console.error('Error parsing error response:', error);
+            return { message: defaultMessage };
+        }
+    };
+    
+    // Show notification function
+    const showNotification = (message, isError = false) => {
+        const notification = document.createElement('div');
+        notification.className = `notification ${isError ? 'notification-error' : 'notification-success'}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('notification-hide');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 5000);
+    };
+    
+    // Function to filter and render the student list
+    const renderStudentList = (filter = '') => {
+        // Clear the current list
+        studentList.innerHTML = '';
+        
+        // Filter students based on search input
+        const filteredStudents = filter 
+            ? allowedStudents.filter(id => id.toLowerCase().includes(filter.toLowerCase()))
+            : allowedStudents;
+        
+        // Show a message if no results found
+        if (filteredStudents.length === 0) {
+            const noResultsEl = document.createElement('div');
+            noResultsEl.className = 'no-results';
+            noResultsEl.textContent = 'No matching student IDs found';
+            studentList.appendChild(noResultsEl);
+            return;
+        }
+        
+        // Create list items for each student
+        filteredStudents.forEach(studentId => {
+            const studentItem = document.createElement('div');
+            studentItem.className = `student-item ${studentId === selectedStudentId ? 'selected' : ''}`;
+            studentItem.textContent = studentId;
+            studentItem.dataset.id = studentId;
+            
+            studentItem.addEventListener('click', () => {
+                // Remove selected class from all items
+                document.querySelectorAll('.student-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                // Set this item as selected
+                studentItem.classList.add('selected');
+                selectedStudentId = studentId;
+                selectedStudentIdEl.textContent = selectedStudentId;
+                
+                // Enable the proceed button
+                proceedButton.disabled = false;
+                
+                // Hide error message if any
+                studentErrorEl.classList.add('hidden');
+            });
+            
+            studentList.appendChild(studentItem);
+        });
+    };
     
     if (!quizId) {
       titleEl.textContent = "Quiz ID is missing in URL.";
@@ -45,14 +131,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // Get quiz info
       console.log(`Fetching quiz info for quizId: ${quizId}`);
-      const quizRes = await fetch(`http://localhost:8080/api/quizzes/${quizId}/info`);
+      const quizRes = await fetch(`${config.apiBaseUrl}/quizzes/${quizId}/info`);
       console.log('Quiz info API response status:', quizRes.status);
       
       if (quizRes.status === 404) {
         console.log('Quiz not found');
-        errorEl.textContent = "Quiz not found.";
-        errorEl.classList.remove('hidden');
+        await handleApiError(quizRes, "Quiz not found.", errorEl);
         titleEl.textContent = "Not Found";
+        return;
+      }
+      
+      if (!quizRes.ok) {
+        await handleApiError(quizRes, "Failed to load quiz information.", errorEl);
         return;
       }
       
@@ -62,31 +152,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Show quiz info
       titleEl.textContent = quizData.title;
       descEl.textContent = quizData.description;
-      durationEl.textContent = `Duration: ${quizData.duration} seconds`;
+      durationEl.textContent = `Duration: ${quizData.duration} minutes`;
   
       // Get allowed students
       console.log(`Fetching allowed students for quizId: ${quizId}`);
-      const allowedRes = await fetch(`http://localhost:8080/api/quizzes/${quizId}/allowed-students`);
+      const allowedRes = await fetch(`${config.apiBaseUrl}/quizzes/${quizId}/allowed-students`);
       console.log('Allowed students API response status:', allowedRes.status);
+      
+      if (!allowedRes.ok) {
+        await handleApiError(allowedRes, "Failed to load allowed students.", errorEl);
+        return;
+      }
+      
       allowedStudents = await allowedRes.json();
       console.log('Allowed students:', allowedStudents);
       
-      // Populate student dropdown
-      allowedStudents.forEach(studentId => {
-          const option = document.createElement('option');
-          option.value = studentId;
-          option.textContent = studentId;
-          studentIdSelect.appendChild(option);
+      // Initialize the student list
+      renderStudentList();
+      
+      // Set up search functionality
+      studentSearchInput.addEventListener('input', (e) => {
+          renderStudentList(e.target.value);
       });
       
-      // Display allowed students
-      allowedEl.textContent = `Allowed Students: ${allowedStudents.join(', ')}`;
+      // Display allowed students count
+      allowedEl.innerHTML = `<i class="fas fa-users"></i><span>Allowed Students: ${allowedStudents.length} student(s)</span>`;
       allowedEl.classList.remove('hidden');
       
       // Handle proceed button click - show access code modal only when clicked
       proceedButton.addEventListener('click', () => {
-          const selectedStudentId = studentIdSelect.value;
-          
           if (!selectedStudentId) {
               studentErrorEl.textContent = "Please select your Student ID";
               studentErrorEl.classList.remove('hidden');
@@ -100,6 +194,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           accessCodeModal.classList.remove('hidden');
           accessCodeInput.value = ''; // Clear previous input
           accessCodeErrorEl.classList.add('hidden');
+          
+          // Focus on input field for better UX
+          accessCodeInput.focus();
       });
       
       // Close modal on X click
@@ -107,9 +204,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           accessCodeModal.classList.add('hidden');
       });
       
+      // Also close modal when clicking outside of it
+      accessCodeModal.addEventListener('click', (e) => {
+          if (e.target === accessCodeModal) {
+              accessCodeModal.classList.add('hidden');
+          }
+      });
+      
+      // Handle Enter key press for access code input
+      accessCodeInput.addEventListener('keypress', (event) => {
+          if (event.key === 'Enter') {
+              submitAccessCodeBtn.click();
+          }
+      });
+      
       // Submit access code
       submitAccessCodeBtn.addEventListener('click', async () => {
-          const selectedStudentId = studentIdSelect.value;
           const accessCode = accessCodeInput.value.trim();
           
           if (!accessCode) {
@@ -118,6 +228,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               return;
           }
           
+          // Show loading state
+          submitAccessCodeBtn.disabled = true;
+          submitAccessCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+          
           try {
               console.log('Submitting access code with data:', {
                   quizId,
@@ -125,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   accessCode
               });
               
-              const startResponse = await fetch('http://localhost:8080/api/quiz-participation/start-with-code', {
+              const startResponse = await fetch(`${config.apiBaseUrl}/quiz-participation/start-with-code`, {
                   method: 'POST',
                   headers: {
                       'Content-Type': 'application/json',
@@ -142,10 +256,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               
               if (!startResponse.ok) {
                   // Handle errors based on status
-                  errorData = await startResponse.json();
-                  console.error('Start quiz API error:', startResponse.status);
-                  accessCodeErrorEl.textContent = errorData.message || "Failed to start quiz. Please try again.";
-                  accessCodeErrorEl.classList.remove('hidden');
+                  const errorData = await handleApiError(startResponse, "Failed to start quiz. Please try again.", accessCodeErrorEl);
+                  
+                  // Reset button state
+                  submitAccessCodeBtn.disabled = false;
+                  submitAccessCodeBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
                   return;
               }
               
@@ -161,6 +276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               document.querySelector('.quiz-action').classList.add('hidden');
               quizInterface.classList.remove('hidden');
               
+              // Show success notification
+              showNotification("Quiz started successfully!");
+              
               // Initialize quiz interface
               initializeQuiz();
               
@@ -169,6 +287,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               accessCodeErrorEl.textContent = "An error occurred. Please try again.";
               accessCodeErrorEl.classList.remove('hidden');
               console.error(error);
+              
+              // Reset button state
+              submitAccessCodeBtn.disabled = false;
+              submitAccessCodeBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
           }
       });
       
@@ -253,6 +375,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("Time's up! Submitting quiz automatically.");
             clearInterval(timerInterval);
             timerEl.textContent = "Time's up!";
+            
+            // Show notification for time up
+            showNotification("Time's up! Submitting your quiz automatically.", true);
+            
             submitQuiz();
             return;
         }
@@ -261,22 +387,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
         
-        timerEl.textContent = `Time remaining: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        // Change timer color when time is running low (less than 1 minute)
+        if (distance < 60000) {
+            timerEl.parentElement.classList.add('timer-warning');
+        }
     }
     
     function displayAllQuestions() {
         console.log('Displaying all questions:', sessionData.questions);
         allQuestionsContainer.innerHTML = '';
         
+        // Create question navigation
+        const navContainer = document.createElement('div');
+        navContainer.className = 'question-nav';
+        
+        // Initialize progress tracking
+        const progressText = document.getElementById('progressText');
+        const progressFill = document.getElementById('progressFill');
+        progressText.textContent = `0/${sessionData.questions.length}`;
+        progressFill.style.width = '0%';
+        
+        // Function to update progress
+        const updateProgress = () => {
+            const answeredCount = Object.keys(answers).length;
+            const totalQuestions = sessionData.questions.length;
+            const percentage = (answeredCount / totalQuestions) * 100;
+            
+            progressText.textContent = `${answeredCount}/${totalQuestions}`;
+            progressFill.style.width = `${percentage}%`;
+        };
+        
         sessionData.questions.forEach((question, index) => {
             // Create question card
             const questionCard = document.createElement('div');
             questionCard.className = 'question-card';
+            questionCard.id = `question-${question.questionId}`;
+            
+            // Question header
+            const questionHeader = document.createElement('div');
+            questionHeader.className = 'question-header';
+            
+            // Question number
+            const questionNumber = document.createElement('div');
+            questionNumber.className = 'question-number';
+            questionNumber.textContent = `Question ${index + 1}`;
+            
+            // Add question header
+            questionHeader.appendChild(questionNumber);
+            questionCard.appendChild(questionHeader);
             
             // Question content
             const questionContent = document.createElement('div');
             questionContent.className = 'question-content';
-            questionContent.textContent = `${index + 1}. ${question.content}`;
+            questionContent.textContent = question.content;
             
             // Question options
             const questionOptions = document.createElement('div');
@@ -292,15 +457,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             options.forEach(option => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
-                optionDiv.textContent = `${option.key}. ${option.value}`;
                 
-                optionDiv.addEventListener('click', () => {
+                const optionRadio = document.createElement('input');
+                optionRadio.type = 'radio';
+                optionRadio.name = `question-${question.questionId}`;
+                optionRadio.id = `question-${question.questionId}-${option.key}`;
+                optionRadio.value = option.key;
+                
+                const optionLabel = document.createElement('label');
+                optionLabel.htmlFor = `question-${question.questionId}-${option.key}`;
+                optionLabel.textContent = `${option.key}. ${option.value}`;
+                
+                optionDiv.appendChild(optionRadio);
+                optionDiv.appendChild(optionLabel);
+                
+                optionRadio.addEventListener('change', () => {
                     // Select this option
                     answers[question.questionId] = option.key;
                     
-                    // Update UI
-                    questionOptions.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
-                    optionDiv.classList.add('selected');
+                    // Update navigation to show answered
+                    const navButton = document.getElementById(`nav-${question.questionId}`);
+                    if (navButton) {
+                        navButton.classList.add('answered');
+                    }
+                    
+                    // Update progress bar
+                    updateProgress();
                 });
                 
                 questionOptions.appendChild(optionDiv);
@@ -312,7 +494,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Append to questions container
             allQuestionsContainer.appendChild(questionCard);
+            
+            // Create navigation button for this question
+            const navButton = document.createElement('button');
+            navButton.className = 'nav-button';
+            navButton.id = `nav-${question.questionId}`;
+            navButton.textContent = index + 1;
+            navButton.addEventListener('click', () => {
+                // Scroll to the question
+                const questionElement = document.getElementById(`question-${question.questionId}`);
+                questionElement.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            navContainer.appendChild(navButton);
         });
+        
+        // Add navigation to the beginning
+        const navWrapper = document.createElement('div');
+        navWrapper.className = 'nav-wrapper';
+        navWrapper.appendChild(navContainer);
+        
+        allQuestionsContainer.insertBefore(navWrapper, allQuestionsContainer.firstChild);
     }
     
     function submitQuiz() {
@@ -323,6 +525,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
         
         console.log('Submitting quiz with answers:', answersArray);
+        
+        // Check if all questions are answered
+        if (answersArray.length < sessionData.questions.length) {
+            const missingCount = sessionData.questions.length - answersArray.length;
+            if (!confirm(`You haven't answered ${missingCount} question(s). Are you sure you want to submit?`)) {
+                return;
+            }
+        }
+        
+        // Show loading state
+        submitQuizBtn.disabled = true;
+        submitQuizBottomBtn.disabled = true;
+        submitQuizBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        submitQuizBottomBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
         
         // Submit answers to backend
         submitAnswers(answersArray);
@@ -335,7 +551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 answers: answersArray
             }));
             
-            const submitResponse = await fetch(`http://localhost:8080/api/quiz-participation/${sessionData.sessionId}/submit`, {
+            const submitResponse = await fetch(`${config.apiBaseUrl}/quiz-participation/${sessionData.sessionId}/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -355,15 +571,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 successEl.classList.remove('hidden');
                 errorEl.classList.add('hidden');
                 
+                // Show success notification
+                showNotification(submitData.message || "Quiz submitted successfully!");
+                
                 // Disable all options
-                const options = document.querySelectorAll('.option');
+                const options = document.querySelectorAll('.option input');
                 options.forEach(option => {
-                    option.style.pointerEvents = 'none';
+                    option.disabled = true;
                 });
                 
                 // Disable submit buttons
                 submitQuizBtn.disabled = true;
                 submitQuizBottomBtn.disabled = true;
+                submitQuizBtn.innerHTML = '<i class="fas fa-check-circle"></i> Quiz Submitted';
+                submitQuizBottomBtn.innerHTML = '<i class="fas fa-check-circle"></i> Quiz Submitted';
                 
                 // Stop timer
                 clearInterval(timerInterval);
@@ -374,6 +595,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 errorEl.textContent = errorData.message || "Failed to submit quiz. Please try again.";
                 errorEl.classList.remove('hidden');
                 successEl.classList.add('hidden');
+                
+                // Show error notification
+                showNotification(errorData.message || "Failed to submit quiz", true);
+                
+                // Reset button state
+                submitQuizBtn.disabled = false;
+                submitQuizBottomBtn.disabled = false;
+                submitQuizBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Quiz';
+                submitQuizBottomBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Quiz';
             }
         } catch (error) {
             // Show generic error message
@@ -381,6 +611,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             errorEl.textContent = "An error occurred while submitting the quiz.";
             errorEl.classList.remove('hidden');
             successEl.classList.add('hidden');
+            
+            // Show error notification
+            showNotification("An error occurred while submitting the quiz", true);
+            
+            // Reset button state
+            submitQuizBtn.disabled = false;
+            submitQuizBottomBtn.disabled = false;
+            submitQuizBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Quiz';
+            submitQuizBottomBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Quiz';
+            
             console.error(error);
         }
     }
