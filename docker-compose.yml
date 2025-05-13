@@ -10,6 +10,7 @@ services:
     command: redis-server --appendonly yes --requirepass redis123
     networks:
       - quiz-network
+      - kind
   # MySQL
   mysql:
     image: mysql:8.0
@@ -24,6 +25,7 @@ services:
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - quiz-network
+      - kind
 
   # MongoDB
   mongodb:
@@ -40,6 +42,7 @@ services:
     command: mongod --auth
     networks:
       - quiz-network
+      - kind
 
   # Kafka and Zookeeper
   zoo1:
@@ -54,6 +57,7 @@ services:
       ZOOKEEPER_SERVERS: zoo1:2888:3888
     networks:
       - quiz-network
+      - kind
   kafka1:
     image: confluentinc/cp-kafka:7.3.2
     hostname: kafka1
@@ -80,6 +84,7 @@ services:
       - zoo1
     networks:
       - quiz-network
+      - kind
 
   # Kafka UI
   kafka-ui:
@@ -97,6 +102,7 @@ services:
     networks:
       - quiz-network
 
+
   quiz-service:
     image: quiz-service:latest
     build:
@@ -111,6 +117,7 @@ services:
       - "8082:8080"
     networks:
       - quiz-network
+
   
   quiz-participation-service:
     image: quiz-participation-service:latest
@@ -188,4 +195,6 @@ volumes:
 networks:
   quiz-network:
     driver: bridge
-
+  kind:
+    external: true
+    name: kind
