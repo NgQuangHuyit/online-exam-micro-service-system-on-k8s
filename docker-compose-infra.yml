@@ -5,8 +5,8 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-#    volumes:
-#      - redis-data:/data
+    #    volumes:
+    #      - redis-data:/data
     command: redis-server --appendonly yes --requirepass redis123
     networks:
       - quiz-network
@@ -127,95 +127,7 @@ services:
       - zoo1
     networks:
       - quiz-network
-
-
-  quiz-service:
-    image: quiz-service:latest
-    build:
-      context: ./services/quiz-service
-      dockerfile: Dockerfile
-    hostname: quiz-service
-    environment:
-      DB_PASSWORD: password
-      DB_USERNAME: root
-      DB_URL: jdbc:mysql://mysql:3306/quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    ports:
-      - "8082:8080"
-    networks:
-      - quiz-network
-    depends_on:
-      mysql:
-        condition: service_healthy
-
-  quiz-participation-service:
-    image: quiz-participation-service:latest
-    build:
-      context: ./services/quiz-participation-service
-      dockerfile: Dockerfile
-    container_name: quiz-participation-service
-    ports:
-      - "8083:8080"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092
-      KAFKA_GROUP_ID: quiz-participation-service
-      KAFKA_SUBMISSION_TOPIC: quiz-submissions
-      QUIZ_SERVICE_URL: quiz-service:8080
-      DB_PASSWORD: password
-      DB_USERNAME: root
-      DB_URL: jdbc:mysql://mysql:3306/quiz_participation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redis123
-    networks:
-      - quiz-network
-
-  result-service:
-    image: result-service:latest
-    build:
-      context: ./services/result-service
-      dockerfile: Dockerfile
-    container_name: result-service
-    ports:
-      - "8084:8080"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    environment:
-      MONGO_HOST: mongodb
-      MONGO_PORT: 27017
-      MONGO_DATABASE: resultdb
-      MONGO_PASSWORD: rootpassword
-      MONGO_USERNAME: root
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redis123
-      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092
-      KAFKA_SUBMISSION_TOPIC: quiz-submissions
-      KAFKA_CONSUMER_GROUP: result-service-group
-      KAFKA_NOTIFICATION_TOPIC: notifications
-      QUIZ_SERVICE_URL: quiz-service:8080
-    networks:
-      - quiz-network
-
-  api-gateway:
-    image: api-gateway:latest
-    build:
-      context: ./gateway
-      dockerfile: Dockerfile
-    container_name: api-gateway
-    ports:
-      - "8081:80"
-    depends_on:
-      - quiz-service
-      - quiz-participation-service
-      - result-service
-    networks:
-      - quiz-network
 volumes:
-  redis-data:
   mysql-data:
   mongodb-data:
 networks:
