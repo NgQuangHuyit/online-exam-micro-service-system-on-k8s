@@ -1,165 +1,165 @@
-openapi: 3.0.3
-info:
-  title: Result Service API
-  description: API cho việc chấm điểm và quản lý kết quả bài thi
-  version: 1.0.0
-
-paths:
-  /results/{resultId}:
-    get:
-      summary: Lấy kết quả bài thi
-      description: Trả về thông tin chi tiết về kết quả bài thi
-      parameters:
-        - name: resultId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: ID của kết quả bài thi
-      responses:
-        '200':
-          description: Thông tin kết quả bài thi
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResultDetail'
-        '404':
-          description: Không tìm thấy kết quả
-
-  /results/session/{sessionId}:
-    get:
-      summary: Lấy kết quả theo ID phiên thi
-      description: Trả về kết quả bài thi dựa trên ID phiên thi
-      parameters:
-        - name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: ID của phiên thi
-      responses:
-        '200':
-          description: Thông tin kết quả bài thi
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResultDetail'
-        '404':
-          description: Không tìm thấy kết quả
-  
-  /results/student/{studentId}/quiz/{quizId}:
-    get:
-      summary: Lấy kết quả theo ID sinh viên và ID bài thi
-      description: Trả về kết quả bài thi dựa trên ID sinh viên và ID bài thi
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: ID của sinh viên
-        - name: quizId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: ID của bài thi
-      responses:
-        '200':
-          description: Thông tin kết quả bài thi
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResultDetail'
-        '404':
-          description: Không tìm thấy kết quả
-
-components:
-  schemas:
-    ResultDetail:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: ID kết quả
-        examSessionId:
-          type: string
-          format: uuid
-          description: ID phiên thi
-        studentId:
-          type: string
-          format: uuid
-          description: ID sinh viên
-        quizId:
-          type: string
-          format: uuid
-          description: ID bài thi
-        score:
-          type: number
-          format: double
-          description: Điểm số tổng
-        totalQuestions:
-          type: integer
-          description: Tổng số câu hỏi
-        scoringDetails:
-          type: array
-          items:
-            $ref: '#/components/schemas/ScoringDetail'
-          description: Chi tiết chấm điểm từng câu hỏi
-        submissionTime:
-          type: string
-          format: date-time
-          description: Thời điểm nộp bài
-        gradedAt:
-          type: string
-          format: date-time
-          description: Thời điểm chấm điểm
-        status:
-          type: string
-          enum: [GRADED, ERROR]
-          description: Trạng thái chấm điểm
-      required:
-        - id
-        - examSessionId
-        - studentId
-        - quizId
-        - score
-        - totalQuestions
-        - scoringDetails
-        - submissionTime
-        - gradedAt
-        - status
-
-    ScoringDetail:
-      type: object
-      properties:
-        questionId:
-          type: string
-          format: uuid
-          description: ID của câu hỏi
-        selectedOption:
-          type: string
-          enum: [A, B, C, D]
-          description: Đáp án được chọn
-        correctOption:
-          type: string
-          enum: [A, B, C, D]
-          description: Đáp án đúng
-        isCorrect:
-          type: boolean
-          description: Đáp án có đúng không
-        score:
-          type: number
-          format: double
-          description: Điểm số cho câu hỏi này
-      required:
-        - questionId
-        - selectedOption
-        - correctOption
-        - isCorrect
-        - score
+#openapi: 3.0.3
+#info:
+#  title: Result Service API
+#  description: API cho việc chấm điểm và quản lý kết quả bài thi
+#  version: 1.0.0
+#
+#paths:
+#  /results/{resultId}:
+#    get:
+#      summary: Lấy kết quả bài thi
+#      description: Trả về thông tin chi tiết về kết quả bài thi
+#      parameters:
+#        - name: resultId
+#          in: path
+#          required: true
+#          schema:
+#            type: string
+#            format: uuid
+#          description: ID của kết quả bài thi
+#      responses:
+#        '200':
+#          description: Thông tin kết quả bài thi
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/ResultDetail'
+#        '404':
+#          description: Không tìm thấy kết quả
+#
+#  /results/session/{sessionId}:
+#    get:
+#      summary: Lấy kết quả theo ID phiên thi
+#      description: Trả về kết quả bài thi dựa trên ID phiên thi
+#      parameters:
+#        - name: sessionId
+#          in: path
+#          required: true
+#          schema:
+#            type: string
+#            format: uuid
+#          description: ID của phiên thi
+#      responses:
+#        '200':
+#          description: Thông tin kết quả bài thi
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/ResultDetail'
+#        '404':
+#          description: Không tìm thấy kết quả
+#
+#  /results/student/{studentId}/quiz/{quizId}:
+#    get:
+#      summary: Lấy kết quả theo ID sinh viên và ID bài thi
+#      description: Trả về kết quả bài thi dựa trên ID sinh viên và ID bài thi
+#      parameters:
+#        - name: studentId
+#          in: path
+#          required: true
+#          schema:
+#            type: string
+#            format: uuid
+#          description: ID của sinh viên
+#        - name: quizId
+#          in: path
+#          required: true
+#          schema:
+#            type: string
+#            format: uuid
+#          description: ID của bài thi
+#      responses:
+#        '200':
+#          description: Thông tin kết quả bài thi
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/ResultDetail'
+#        '404':
+#          description: Không tìm thấy kết quả
+#
+#components:
+#  schemas:
+#    ResultDetail:
+#      type: object
+#      properties:
+#        id:
+#          type: string
+#          format: uuid
+#          description: ID kết quả
+#        examSessionId:
+#          type: string
+#          format: uuid
+#          description: ID phiên thi
+#        studentId:
+#          type: string
+#          format: uuid
+#          description: ID sinh viên
+#        quizId:
+#          type: string
+#          format: uuid
+#          description: ID bài thi
+#        score:
+#          type: number
+#          format: double
+#          description: Điểm số tổng
+#        totalQuestions:
+#          type: integer
+#          description: Tổng số câu hỏi
+#        scoringDetails:
+#          type: array
+#          items:
+#            $ref: '#/components/schemas/ScoringDetail'
+#          description: Chi tiết chấm điểm từng câu hỏi
+#        submissionTime:
+#          type: string
+#          format: date-time
+#          description: Thời điểm nộp bài
+#        gradedAt:
+#          type: string
+#          format: date-time
+#          description: Thời điểm chấm điểm
+#        status:
+#          type: string
+#          enum: [GRADED, ERROR]
+#          description: Trạng thái chấm điểm
+#      required:
+#        - id
+#        - examSessionId
+#        - studentId
+#        - quizId
+#        - score
+#        - totalQuestions
+#        - scoringDetails
+#        - submissionTime
+#        - gradedAt
+#        - status
+#
+#    ScoringDetail:
+#      type: object
+#      properties:
+#        questionId:
+#          type: string
+#          format: uuid
+#          description: ID của câu hỏi
+#        selectedOption:
+#          type: string
+#          enum: [A, B, C, D]
+#          description: Đáp án được chọn
+#        correctOption:
+#          type: string
+#          enum: [A, B, C, D]
+#          description: Đáp án đúng
+#        isCorrect:
+#          type: boolean
+#          description: Đáp án có đúng không
+#        score:
+#          type: number
+#          format: double
+#          description: Điểm số cho câu hỏi này
+#      required:
+#        - questionId
+#        - selectedOption
+#        - correctOption
+#        - isCorrect
+#        - score

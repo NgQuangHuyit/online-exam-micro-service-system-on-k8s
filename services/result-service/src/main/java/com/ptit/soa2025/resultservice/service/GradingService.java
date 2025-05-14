@@ -1,7 +1,6 @@
 package com.ptit.soa2025.resultservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.soa2025.resultservice.client.QuizServiceClient;
 import com.ptit.soa2025.resultservice.dto.QuizAnswer;
@@ -74,7 +73,7 @@ public class GradingService {
             
             for (QuizAnswer answer : correctAnswers) {
                 String questionId = answer.getQuestionId();
-                String correctAnswer = answer.getCorrectAnswer();
+                String correctAnswer = answer.getCorrectOption();
                 String studentAnswer = studentAnswersMap.get(questionId);
                 
                 boolean isCorrect = correctAnswer != null && correctAnswer.equals(studentAnswer) ;

@@ -16,23 +16,38 @@
 
 ## 🚀 Getting Started
 
-1. **Clone this repository**
+### Docker deployment
+1. **Clone repository**
 
    ```bash
-   git clone https://github.com/hungdn1701/microservices-assignment-starter.git
+   git clone https://github.com/jnp2018/mid-project-580736435.git
    cd mid-project-580736435
    ```
 
-2. **Copy environment file**
+
+2. **Khởi chạy hệ thống bằng Docker Compose**
 
    ```bash
-   cp .env.example .env
-   ```
-
-3. **Run with Docker Compose**
-
-   ```bash
-   docker-compose up --build
+   docker-compose -f docker-compose.yml up --build
    ```
 ---
+
+### Kubernetes deployment (kind cluster)
+
+1. **Start up external docker infrastructure**
+   ```bash
+   docker-compose -f docker-compose-infra.yml up --build
+   ```
+
+2. **Start up kubernetes cluster (kind)**
+   ```bash
+   kind create cluster --config ./k8s/kind-config.yaml
+   ```
+3. **Deploy kubernetes resources**
+   ```bash
+   kubectl apply -f ./k8s/gateway-k8s-deploy.yml 
+   kubectl apply -f ./k8s/quiz-participation-service-k8s-deploy.yml
+   kubectl apply -f ./k8s/quiz-service-k8s-deploy.yml
+   kubectl apply -f ./k8s/result-service-k8s-deploy.yml
+   ```
 
