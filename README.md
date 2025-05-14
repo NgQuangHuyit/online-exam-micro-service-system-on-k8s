@@ -1,42 +1,18 @@
-# 🧩 Microservices Assignment Starter Template
+# 🧩 Hệ thống thi trắc nghiệm trực tuyến - Use Case: Tham gia làm bài thi trắc nghiệm
 
-This repository is a **starter template** for building a microservices-based system. Use it as a base for your group assignment.
+## 👥 Danh sách thành viên và phần việc đã thực hiện
 
----
-
-## 📁 Folder Structure
-
-```
-microservices-assignment-starter/
-├── README.md                       # This instruction file
-├── .env.example                    # Example environment variables
-├── docker-compose.yml              # Multi-container setup for all services
-├── docs/                           # Documentation folder
-│   ├── architecture.md             # Describe your system design here
-│   ├── analysis-and-design.md      # Document system analysis and design details
-│   ├── asset/                      # Store images, diagrams, or other visual assets for documentation
-│   └── api-specs/                  # API specifications in OpenAPI (YAML)
-│       ├── service-a.yaml
-│       └── service-b.yaml
-├── scripts/                        # Utility or deployment scripts
-│   └── init.sh
-├── services/                       # Application microservices
-│   ├── service-a/
-│   │   ├── Dockerfile
-│   │   └── src/
-│   │   └── readme.md               # Service A instructions and description
-│   └── service-b/
-│       ├── Dockerfile
-│       └── src/
-│   │   └── readme.md               # Service B instructions and description
-└── gateway/                        # API Gateway / reverse proxy
-    ├── Dockerfile
-    └── src/
-
-
-```
+| Tên sinh viên         | Mã sinh viên | Công việc thực hiện                                                                                                                                                                                                              |
+|------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Nguyễn Quang Huy       | B21DCCN435   | - Thiết kế kiến trúc hệ thống  <br> - Xây dựng `quiz-participation-service`  <br> - Xây dựng `result-service`  <br> - Triển khai hệ thống bằng Docker Compose / Kubernetes  <br> - Hoàn thiện tài liệu phân tích & thiết kế     |
+| Nguyễn Thị Phấn        | B21DCCN580   | - Xây dựng `quiz-service`  <br> - Phân tích và xác định luồng nghiệp vụ, các microservice                                                                                                                                        |
+| Tống Quang Trung       | B21DCCN736   | - Xây dựng và cấu hình `API Gateway`  <br> - Xây dựng giao diện `Frontend`  <br> - Viết tài liệu API specs                                                                                                                           |
 
 ---
+
+# 🏗️ Overall Architecture
+
+![deployment.drawio.png](docs/asset/deployment.drawio.png)
 
 ## 🚀 Getting Started
 
@@ -44,7 +20,7 @@ microservices-assignment-starter/
 
    ```bash
    git clone https://github.com/hungdn1701/microservices-assignment-starter.git
-   cd microservices-assignment-starter
+   cd mid-project-580736435
    ```
 
 2. **Copy environment file**
@@ -59,45 +35,4 @@ microservices-assignment-starter/
    docker-compose up --build
    ```
 ---
-
-## 🧪 Development Notes
-
-- Use `docs/api-specs/*.yaml` to document REST APIs using OpenAPI format (Swagger).
-
----
-
-## 📚 Recommended Tasks
-- [ ] Document system analysis and design in `analysis-and-design.md` as the first step
-- [ ] Update `architecture.md` to describe your system components.
-- [ ] Define all APIs using OpenAPI YAML in `docs/api-specs/`.
-- [ ] Implement business logic in `service-a` and `service-b`.
-- [ ] Configure API Gateway
-- [ ] Ensure services can communicate internally using service names (Docker Compose handles networking).
-
----
-
-## 📌 Notes
-
-- Use Git branches for team collaboration.
-- Commit early, commit often!
-
----
-
-## 👩‍🏫 Assignment Submission
-
-Please make sure:
-- `README.md` is updated with service descriptions and API usage, following standard README conventions (e.g., clear structure, usage instructions, and contribution guidelines).
-- Include a list of team members and their contributions in the `README.md`.
-- All your code should be **runnable with one command**: `docker-compose up`.
-
-
-
-## Author
-
-This template was created by Hung Dang.
-- Email: hungdn@ptit.edu.vn
-- GitHub: hungdn1701
-
-
-Good luck! 💪🚀
 
