@@ -9,6 +9,10 @@ Hệ thống được xây dựng theo kiến trúc microservices, cho phép:
 - Triển khai độc lập từng thành phần
 - Tính sẵn sàng và khả năng chịu lỗi tốt
 
+## Kiến trúc tổng thể
+
+![deployment.drawio.png](asset/deployment.drawio.png)
+
 ## Các thành phần hệ thống
 
 ### Frontend
@@ -18,31 +22,40 @@ Hệ thống được xây dựng theo kiến trúc microservices, cho phép:
 
 - **API Gateway**: Điểm vào duy nhất của hệ thống từ client, chịu trách nhiệm định tuyến các request đến microservice thích hợp, xử lý các vấn đề chung như rate limiting và logging cơ bản.
 
-- **Student Service**: Quản lý thông tin cơ bản của sinh viên (ID, tên, thông tin liên hệ).
-
 - **Quiz Service**: Quản lý nội dung bài thi, câu hỏi, đáp án, cũng như quản lý quyền truy cập và mã xác thực cho từng sinh viên.
 
 - **Quiz Participation Service**: Xử lý quy trình tham gia thi, từ xác thực sinh viên, gửi câu hỏi, quản lý phiên thi đến việc nhận bài nộp.
 
 - **Result Service**: Xử lý việc chấm điểm bài thi và lưu trữ kết quả chi tiết của sinh viên. Service này sử dụng MongoDB để lưu trữ dữ liệu kết quả linh hoạt.
 
-- **Notification Service**: Gửi thông báo kết quả thi cho sinh viên qua email hoặc các phương tiện khác.
-
 ### Dịch vụ cơ sở hạ tầng
 
-- **Kafka Message Broker**: Hệ thống messaging phân tán sử dụng để giao tiếp bất đồng bộ giữa các service. Kafka đảm bảo độ tin cậy cao và khả năng xử lý message với thông lượng lớn. Được sử dụng trong hệ thống để:
-  - Truyền dữ liệu bài làm từ Quiz Participation Service đến Result Service
-  - Gửi thông báo kết quả từ Result Service đến Notification Service
-  - Hỗ trợ mô hình event-driven giữa các service
+- **Kafka Message Broker**: Hệ thống sử dụng **Apache Kafka** như một nền tảng truyền tải dữ liệu bất đồng bộ giữa các service với thông lượng cao và độ tin cậy lớn.
 
-- **Redis Cache**: Hệ thống cache in-memory tốc độ cao được sử dụng để lưu trữ tạm thời dữ liệu câu hỏi bài thi. Redis giúp:
-  - Giảm tải cho database chính bằng cách cache danh sách câu hỏi thường xuyên truy vấn
-  - Tăng tốc việc lấy dữ liệu câu hỏi khi nhiều sinh viên bắt đầu làm bài thi cùng lúc
-  - Cải thiện thời gian phản hồi của hệ thống
+  - **Tình huống sử dụng chính**:
+    - Khi nhiều sinh viên nộp bài cùng lúc → `Quiz Participation Service` gửi bài làm qua Kafka.
+    - `Result Service` consume mesage từ kafka để xử lý dữ liệu bài làm của sinh viên và chấm điểm bài thi theo mô hình **event-driven**.
+
+  - **Lợi ích**:
+    - Tăng khả năng chịu tải tại thời điểm cao điểm (ví dụ: cuối bài thi).
+    - Giảm độ phụ thuộc giữa các service (decoupling).
+    - Dễ ràng scale theo chiều ngang.
+
+
+- **Redis Cache**: Redis được tích hợp như một **in-memory cache** nhằm cải thiện hiệu suất truy vấn dữ liệu tần suất cao, cụ thể:
+
+  - **Caching câu hỏi và đáp án bài thi**:
+    - Tại thời điểm bắt đầu bài thi, nhiều sinh viên sẽ đồng thời truy xuất danh sách câu hỏi → việc truy cập Redis giúp giảm tải cho cơ sở dữ liệu.
+    - Khi chấm điểm, đáp án đúng cũng có thể được lấy nhanh từ cache thay vì query lại từ DB.
+
+  - **Lợi ích**:
+    - Tăng tốc độ phản hồi cho các request truy vấn đề thi.
+    - Giảm thiểu độ trễ và tắc nghẽn tại lớp `Quiz Service` khi có tải cao.
+    - Giảm số lượng truy vấn trực tiếp đến cơ sở dữ liệu MySQL.
+
 
 ### Cơ sở dữ liệu
 
-- **StudentDB**: Lưu trữ thông tin sinh viên (MySQL).
 - **QuizDB**: Lưu trữ bài thi, câu hỏi, đáp án và thông tin mã truy cập (MySQL).
 - **ExamSessionDB**: Lưu trữ thông tin phiên thi (MySQL).
 - **ResultDB**: Lưu trữ kết quả thi chi tiết (MongoDB).
@@ -62,58 +75,61 @@ Hệ thống được xây dựng theo kiến trúc microservices, cho phép:
 - **Result Service → Kafka → Notification Service**: Yêu cầu gửi thông báo kết quả
 
 ## Luồng dữ liệu
-![dataflow.png](asset/dataflow.png)
+![plantuml.svg](asset/plantuml.svg)
 
-Luồng dữ liệu chính trong hệ thống bao gồm 5 giai đoạn:
+## Khả năng mở rộng, khả năng chịu lỗi và tính tin cậy của hệ thống
 
-### Giai đoạn 0: Hiển thị danh sách sinh viên được phép tham gia
-- Client yêu cầu danh sách sinh viên được phép tham gia bài thi cụ thể
-- Quiz Service truy vấn QuizDB để tìm các mã truy cập hợp lệ và trả về danh sách sinh viên
+### 1. Khả năng mở rộng (Scalability)
 
-### Giai đoạn 1: Xác thực và bắt đầu phiên thi
-- Sinh viên nhập mã truy cập và ID
-- Quiz Participation Service xác thực thông tin với Quiz Service
-- Nếu hợp lệ, tạo phiên thi mới và lấy danh sách câu hỏi (có sử dụng cache)
-- Trả về danh sách câu hỏi cho client
+Hệ thống được thiết kế theo kiến trúc microservices, triển khai trên nền tảng Kubernetes để đảm bảo khả năng mở rộng linh hoạt và tối ưu tài nguyên:
 
-### Giai đoạn 2: Quá trình làm bài
-- Sinh viên làm bài trên client, các câu trả lời được lưu trữ tạm trong localStorage
+- **Triển khai trên Kubernetes**:
+  - Mỗi microservice được container hóa và triển khai dưới dạng Pod, quản lý bởi Deployment .
+- **Tách biệt theo domain**:
+  - Các microservice được chia theo chức năng độc lập (quiz, participation, result...), hỗ trợ scale từng phần riêng biệt theo nhu cầu thực tế.
+- **Redis Cache**:
+  - Giúp giảm tải cơ sở dữ liệu tại thời điểm nhiều sinh viên đồng thời truy cập vào bài thi. Redis hoạt động như lớp cache trung gian để phân phối câu hỏi một cách nhanh chóng.
+- **Kafka Message Broker**:
+  - Cho phép scale các consumer để xử lý đồng thời hàng nghìn sự kiện nộp bài, đặc biệt trong giai đoạn kết thúc kỳ thi.
+- **Persistent Volume cho Database và Kafka**:
+  - Sử dụng các PersistentVolumeClaim (PVC) để đảm bảo tính bền vững của dữ liệu trên MongoDB, MySQL và Kafka logs.
 
-### Giai đoạn 3: Nộp bài
-- Sinh viên gửi toàn bộ bài làm đến Quiz Participation Service
-- Quiz Participation Service xác thực thời gian nộp bài
-- Nếu hợp lệ, cập nhật trạng thái phiên thi và gửi bài làm đến Kafka
+---
 
-### Giai đoạn 4: Chấm điểm
-- Result Service nhận bài làm từ Kafka
-- Lấy đáp án đúng từ Quiz Service
-- Chấm điểm và lưu kết quả vào ResultDB
-- Gửi thông báo đến Notification Service để thông báo kết quả cho sinh viên
+### 2. Khả năng chịu lỗi (Fault Tolerance)
 
-## Khả năng mở rộng và khả năng chịu lỗi
+Triển khai trên Kubernetes giúp hệ thống tự phục hồi khi gặp sự cố, kết hợp với các cơ chế chịu lỗi ở tầng ứng dụng:
 
-### Khả năng mở rộng
-- Các microservice có thể được triển khai độc lập và mở rộng theo nhu cầu
-- Kafka hỗ trợ xử lý lượng lớn message khi có nhiều thí sinh nộp bài cùng lúc
-- Redis cache giúp giảm tải cho việc truy vấn câu hỏi nhiều lần
-- Thiết kế cho phép thêm nhiều node cho mỗi service khi cần thiết
+- **Kubernetes Self-healing**:
+  - Khi một Pod gặp lỗi hoặc node chết, Kubernetes sẽ tự động tạo lại Pod thay thế, đảm bảo dịch vụ luôn sẵn sàng.
+- **Kafka với replication và retention**:
+  - Kafka cluster sử dụng cấu hình replication ≥ 2 để đảm bảo không mất dữ liệu message ngay cả khi một broker gặp sự cố.
+  - Kafka consumer có thể khôi phục việc xử lý từ offset đã lưu trước đó.
+- **Redis (optional cache)**:
+  - Redis chỉ dùng để tăng tốc truy vấn, nếu Redis gặp lỗi, hệ thống tự động fallback truy vấn trực tiếp từ cơ sở dữ liệu.
 
-### Khả năng chịu lỗi
-- Kiến trúc phân tán giúp hệ thống tiếp tục hoạt động ngay cả khi một số service gặp sự cố
-- Kafka đảm bảo tin nhắn không bị mất khi xảy ra lỗi tạm thời
-- Mô hình lưu trữ phiên thi đảm bảo không mất dữ liệu khi xảy ra sự cố
-- Cơ chế retry và circuit breaker có thể được triển khai trong giao tiếp giữa các service
+---
 
-## Vấn đề bảo mật
-- Xác thực nghiêm ngặt sự kết hợp của quizId, studentId, accessCode
-- Mã truy cập được thiết kế đủ mạnh và chỉ sử dụng được một lần
-- Kiểm tra chặt chẽ khung thời gian làm bài
-- Đảm bảo an toàn khi cập nhật trạng thái mã truy cập
-- Toàn bộ giao tiếp giữa client và API Gateway sử dụng HTTPS
+### 3. Tính tin cậy (Reliability)
 
-## Triển khai
-Hệ thống được thiết kế để triển khai trên các môi trường container hóa:
-- Môi trường phát triển: Docker Compose
-- Môi trường sản xuất: Kubernetes hoặc Docker Swarm
+Để đảm bảo độ chính xác và toàn vẹn dữ liệu, hệ thống sử dụng các kỹ thuật đáng tin cậy ở cả tầng giao tiếp bất đồng bộ lẫn lưu trữ:
 
-Chi tiết kế hoạch triển khai được mô tả trong tài liệu [analysis-and-design.md](analysis-and-design.md#kế-hoạch-triển-khai-deployment-plan).
+- **Outbox Pattern tại `quiz-participation-service`**:
+  - Khi sinh viên nộp bài, dữ liệu được ghi vào cơ sở dữ liệu trước (transactional), sau đó lưu vào bảng `outbox`.
+  - Một background process (hoặc sidecar container) đảm nhiệm việc publish dữ liệu từ bảng `outbox` lên Kafka.
+  - Đảm bảo không có tình trạng “double write inconsistency” khi một trong hai thao tác (ghi DB và gửi Kafka) thất bại.
+- **Idempotent Consumer tại `result-service`**:
+  - Consumer Kafka được thiết kế idempotent, tránh xử lý trùng lặp .
+- **Message Retry )**:
+  - Các message lỗi được cấu hình tự động retry.
+---
+
+Thông qua việc kết hợp giữa kiến trúc microservices, Redis, Kafka, Outbox Pattern, Idempotent Consumer và triển khai trên Kubernetes, hệ thống đảm bảo:
+
+- Dễ dàng mở rộng khi số lượng sinh viên tăng cao
+- Không mất dữ liệu ngay cả trong trường hợp lỗi dịch vụ hoặc message lặp
+- Phục hồi nhanh chóng khi gặp sự cố hạ tầng hoặc lỗi logic nội tại
+
+---
+
+

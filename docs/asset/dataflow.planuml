@@ -2,29 +2,32 @@
 actor SV as "Sinh Viên"
 participant C as "Client (Web/Mobile App)"
 participant GW as "API Gateway"
-participant SS as "Student Service"
-participant QPS as "Quiz Participation Service:"
+participant QPS as "Quiz Participation Service"
 participant QS as "Quiz Service"
-participant MQ as "Kafka"
-participant GS as "Score Service"
 participant RS as "Result Service"
-participant NS as "Notification Service"
+queue "Kafka Topic" as MQ
 participant Cache as "Redis cache"
 database DbQPS as "ExamSession DB"
 database DbQS as "QuizDB"
-database DbSS as "StudentDB"
 database DbRS as "ResultDB"
 
-== Giai đoạn 0: Hiển thị danh sách Sinh viên ==
+== Truy cập trang bài thi ==
+SV -> C: Truy cập trang bài thi
+C -> GW : GET /api/quizzes/{quizId}/info
+GW -> QS : GET /{quizId}/info
+QS -> DbQS : Query Quiz where quizId=quizId
+DbQS --> QS : Quiz
+QS --> GW : QuizInfo
+GW -> C: QuizInfo
 C -> GW : GET /api/quizzes/{quizId}/allowed-students
 GW -> QS : GET /{quizId}/allowed-students
 QS -> DbQS : Find QuizAccess where quizId=quizId
 DbQS --> QS : List of {studentId, accessCode}
-QS --> GW : List of studentId
+QS --> GW : List of allowed studentid
 GW -> C: List of studentId
-C -> SV : Hiển thị danh sách sinh viên
+C -> SV : Hiển thị danh sách sinh viên, thông tin bài thi
 
-== Giai đoạn 1: Xác thực và Bắt đầu Phiên ==
+== Xác thực truy cập và bắt đầu bài thi ==
 SV -> C : Chọn studentId, accessCode
 C -> GW : POST /api/quiz-participation/start-with-code
 GW -> QPS : POST /start-with-code
@@ -40,7 +43,7 @@ else Hợp lệ
     DbQS --> QS : QuizAccess Record
     QS -> QS : Kiểm tra accessCode, khung giờ làm bài
     QS --> QPS : Valid OK
-    QPS -> DbQPS : Get Session Data
+    QPS -> DbQPS : Find Quiz Participation Session by QuizID and StudentId
     alt Đã nộp bài thành công
        DbQPS--> QPS: SessionData (Submited)
        QPS --> GW: ExamSession Submited
@@ -48,10 +51,10 @@ else Hợp lệ
        C --> SV: Hiển thị đã nộp bài
     else Chưa Tạo phiên làm bài
        DbQPS-->  QPS: NotFound
-       QPS -> DbQPS : Create ExamSession (STARTED)
+       QPS -> DbQPS : Create Quiz Participation Session (STARTED)
        DbQPS --> QPS: Created
     else Đã tạo phiên làm bài, chưa nộp bài
-       DbQPS --> QPS: SessionData (Submited)
+       DbQPS --> QPS: Quiz Participation Session (STARTED)
     end
 
     QPS -> Cache: Get quizId_questions
@@ -72,12 +75,13 @@ else Hợp lệ
     C -> SV : Hiển thị câu hỏi
 end
 
-== Giai đoạn 2: Quá trình làm bài ==
+==  Quá trình làm bài ==
 
     SV -> C : Lưu trạng thái
     C -> C : Cache to Local Storage
 
-== Giai đoạn 3: Nộp bài ==
+
+== Nộp bài ==
 SV -> C : Bấm "Nộp bài"
 C -> GW : POST /api/quiz-participation/{sessionId}/submit
 GW -> QPS : POST /{sessionId}/submit
@@ -90,34 +94,53 @@ alt Quá hạn
     GW --> C : Thông báo lỗi
     C -> SV : Lỗi
 else Hợp lệ
-    QPS -> MQ : Publish SubmissionReceived
-    MQ --> QPS : Ack
-    QPS -> DbQPS : Update ExamSession SUBMITTED
-    DbQPS --> QPS : OK
+    QPS -> DbQPS : Start Transaction
+    QPS -> DbQPS : Update session state = 'submited'
+    QPS -> DbQPS : Insert Outbox Event (state = 'pending')
+    QPS -> DbQPS : Commit Transaction
+    DbQPS -> QPS : Transaction Complete
     QPS --> GW : Submit OK
     GW --> C : Nộp bài thành công
     C -> SV : Hiển thị thông báo
 end
 
-== Giai đoạn 4: Chấm điểm ==
-MQ -> RS : Consume SubmissionReceived
-RS -> Cache : Get quizid_answers
+== Publish Submmision Message ==
+
+loop Scheduled Task Every 5 minutes
+    QPS -> DbQPS : Query Outbox Event (state = 'pending' || state = 'failed')
+    DbQPS -> QPS : List OutboxEvents
+    loop For each event
+        QPS -> MQ: Publish Submit Message
+        MQ --> QPS: ACK
+        QPS -> DbQPS: Update OutboxEvent state = 'processed'
+    end
+end
+
+== Chấm điểm và ghi nhận kết quả làm bài ==
+MQ -> RS : Consume Submit Message
+RS -> DbRS : Exist Result by SessionId
+
+alt Result By SessionId exists
+   DbRS -> RS: Result Exist
+   RS -> MQ : ACK Submit Message
+else Result By SessionId Not Exists
+   DbRS -> RS: Result Not Exist
+RS -> Cache : Get quizid:answers
 alt cache hited
-     Cache --> RS: value of quizid_answers
+     Cache --> RS: value of quizid:answers
 else cache missed
      RS -> QS : GET /{quizId}/answers
      QS -> DbQS : Correct Answers
      DbQS --> QS : Answer List
      QS --> RS : Answer List
-     RS -> Cache : Set quizid_answers : answers
+     RS -> Cache : cache quizid:answers
 end
 
 RS -> RS: Chấm điểm bài thi
 RS -> DbRS : Save Result
 DbRS --> RS : OK
-RS -> MQ: publish SubmmisionCompleted
-RS -> MQ: Ack SubmissionReceived Message
-MQ -> NS: Consume SubmmisionCompleted
-NS -> NS: Gửi thông báo kết quả
-NS -> MQ : Ack SubmmisionCompleted Message
+RS -> MQ : ACK Submit Message
+end
+
+
 @enduml
